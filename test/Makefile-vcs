@@ -1,0 +1,18 @@
+SRC_DIR = ../src
+
+VC = vcs
+
+CFLAGS += -debug_access+cbk
+CFLAGS += -full64 -sverilog
+
+tests = sim_intf_tb0
+
+default: all
+
+all: $(tests)
+
+clean:
+	rm -rf $(tests)
+
+sim_intf_tb0: $(SRC_DIR)/sc_func.c $(SRC_DR)/sim_intf.sv ./sim_intf_tb0.sv
+	$(CC) $(CFLAGS) $(SRC_DIR)/sc_func.c $(SRC_DIR)/sim_intf.sv ./sim_intf_tb0.sv -o $@
