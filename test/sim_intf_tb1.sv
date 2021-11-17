@@ -3,6 +3,7 @@ module sim_intf_tb;
 	logic miss;
 	longint pc_try;
 	longint pc_factual;
+	int insn;
 
 	int i;
 	longint pc_list[] = {
@@ -18,7 +19,7 @@ module sim_intf_tb;
 		'h0000000000001010
 	};
 
-	sim_intf dut(clk, pc_try, pc_factual, miss);
+	sim_intf dut(clk, pc_try, pc_factual, insn, miss);
 
 	initial
 	begin
@@ -50,7 +51,7 @@ module sim_intf_tb;
 		if (miss)
 			$display("%x miss %x", pc_try, pc_factual);
 		else
-			$display("%x ok", pc_try);
+			$display("%x ok, %x", pc_try, insn);
 	end
 
 endmodule
