@@ -2,6 +2,6 @@
 #define _SC_FUNC_H
 
 int sc_init(char *host, unsigned int port);
-int sc_run(unsigned long long *npc);
+int sc_run(unsigned long long *npc, unsigned long long *insn);
 
 #endif

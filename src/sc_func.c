@@ -50,10 +50,12 @@ int sc_init(char *host, unsigned int port)
 	return fd;
 }
 
-int sc_run(unsigned long long *npc)
+int sc_run(unsigned long long *npc, unsigned long long *insn)
 {
 	int fd;
 	int tx_size;
+	int rx_size;
+	int rx_offset;
 	char tx_buf[SOCK_BUF_SIZE];
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
@@ -62,6 +64,8 @@ int sc_run(unsigned long long *npc)
 
 	tx_buf[0] = 'R';
 	tx_size = 1;
+	rx_size = sizeof(uint64_t); // PC
+	rx_size += sizeof(uint64_t); // Instruction
 
 resend:
 	ret = send(fd, tx_buf, tx_size, 0);
@@ -75,10 +79,13 @@ resend:
 		printf("SC Error: Failed to receive\n");
 		return -1;
 	}
-	if (ret != sizeof(uint64_t) || rx_buf[0] & 0x3)
+	if (ret != rx_size || rx_buf[0] & 0x3)
 		goto resend;
 
-	memcpy(npc, rx_buf, sizeof(*npc));
+	rx_offset = 0;
+	memcpy(npc, rx_buf + rx_offset, sizeof(*npc));
+	rx_offset += sizeof(uint64_t);
+	memcpy(insn, rx_buf + rx_offset, sizeof(*insn));
 	
 	return 1;
 }
