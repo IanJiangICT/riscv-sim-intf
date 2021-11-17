@@ -6,6 +6,7 @@ CFLAGS += -debug_access+cbk
 CFLAGS += -full64 -sverilog
 
 tests = sim_intf_tb0
+tests += sim_intf_tb1
 
 default: all
 
@@ -16,3 +17,6 @@ clean:
 
 sim_intf_tb0: $(SRC_DIR)/sc_func.c $(SRC_DR)/sim_intf.sv ./sim_intf_tb0.sv
 	$(CC) $(CFLAGS) $(SRC_DIR)/sc_func.c $(SRC_DIR)/sim_intf.sv ./sim_intf_tb0.sv -o $@
+
+sim_intf_tb1: $(SRC_DIR)/sc_func.c $(SRC_DR)/sim_intf.sv ./sim_intf_tb1.sv
+	$(CC) $(CFLAGS) $(SRC_DIR)/sc_func.c $(SRC_DIR)/sim_intf.sv ./sim_intf_tb1.sv -o $@
