@@ -10,8 +10,8 @@ module sim_intf(
 	output logic miss);
 	
 	parameter START_PC = 64'h80000000;
-	parameter INPUT_ELF= "";
-	parameter SIM_PORT = 12300;
+	parameter INPUT_ELF= "";	// "hello" for example
+	parameter SIM_PORT = 12300; // or 12400, 12500, 12600
 
 	// Current state but viewed as Next for user
 	longint npc;
@@ -52,15 +52,21 @@ module sim_intf(
 		output int i;
 		output logic m;
 
+		longint new_npc;
+		longint new_cpc;
+		longint new_ci;
 		int ret;
 
 		if (pc_i == cpc) begin
-			ret = sc_run_next(npc, cpc, ci);
+			ret = sc_run_next(new_npc, new_cpc, new_ci);
 			if (ret < 0) begin
 				$display("Error: Failed sc_run_next");
 				$finish();
 			end
 			m = 0;
+			npc <= new_npc;
+			cpc <= new_cpc;
+			ci <= new_ci;
 		end
 		else begin
 			m = 1;

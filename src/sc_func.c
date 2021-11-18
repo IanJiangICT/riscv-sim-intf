@@ -65,7 +65,7 @@ static int start_sim(char *elf, unsigned int port)
 		return fork_pid;
 	}
 
-	sprintf(cmd_str, SIM_CMD_PREFIX"%u %s < /dev/zero > spike-run.log 2&>1", port, elf);
+	sprintf(cmd_str, SIM_CMD_PREFIX"%u %s < /dev/zero > spike-run.log 2>&1", port, elf);
 	printf("SC: Starting simulator in new process\n  %s\n", cmd_str);
 	ret = system(cmd_str);
 	if (ret != 0) {
@@ -127,7 +127,7 @@ resend:
 		printf("SC Error: Failed to receive\n");
 		return -1;
 	}
-	if (ret != rx_size || rx_buf[0] & 0x3)
+	if (ret != rx_size || (rx_buf[0] & 0x07) == 0x05)
 		goto resend;
 
 	rx_offset = 0;
