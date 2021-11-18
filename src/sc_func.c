@@ -50,6 +50,49 @@ int sc_init(char *host, unsigned int port)
 	return fd;
 }
 
+#define CMD_STR_LEG_MAX 256
+#define SIM_CMD_PREFIX  "spike --state-ctrl="
+#define SIM_PORT_DEF    12300
+
+static int start_sim(char *elf, unsigned int port)
+{
+	char cmd_str[CMD_STR_LEG_MAX] = {SIM_CMD_PREFIX};
+	int ret;
+	pid_t fork_pid;
+
+	fork_pid = fork();
+	if (fork_pid != 0) {
+		return fork_pid;
+	}
+
+	sprintf(cmd_str, SIM_CMD_PREFIX"%u %s < /dev/zero > spike-run.log 2&>1", port, elf);
+	printf("SC: Starting simulator in new process\n  %s\n", cmd_str);
+	ret = system(cmd_str);
+	if (ret != 0) {
+		printf("SC Error: Failed to start Simulator process. ret = %d\n", ret);
+		exit(ret);
+	}
+	exit(0);
+}
+
+int sc_init_sim(char *elf, unsigned int port)
+{
+	int ret;
+
+	if (elf == NULL) return -1;
+	if (port <= 0) port = SIM_PORT_DEF;
+
+	ret = start_sim(elf, port);
+	if (ret < 0) {
+		return ret;
+	}
+
+	printf("SC: Wait for simualtor starting\n");
+	sleep(2);
+
+	return sc_init("127.0.0.1", port);
+}
+
 int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long long *insn)
 {
 	int fd;
