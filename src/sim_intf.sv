@@ -1,5 +1,5 @@
 import "DPI-C" function int sc_init(input string host, input int port);
-import "DPI-C" function int sc_run(output longint npc, output longint insn);
+import "DPI-C" function int sc_run_next(output longint npc, output longint insn);
 
 module sim_intf(
 	input clk,
@@ -34,7 +34,7 @@ module sim_intf(
 		int ret;
 
 		if (pc_i == npc) begin
-			ret = sc_run(npc, ni);
+			ret = sc_run_next(npc, ni);
 			if (ret < 0) begin
 				$display("Error: Failed sc_run");
 				$finish();

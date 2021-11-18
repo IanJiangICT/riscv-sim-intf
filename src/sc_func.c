@@ -50,7 +50,7 @@ int sc_init(char *host, unsigned int port)
 	return fd;
 }
 
-int sc_run(unsigned long long *npc, unsigned long long *insn)
+int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long long *insn)
 {
 	int fd;
 	int tx_size;
@@ -60,12 +60,17 @@ int sc_run(unsigned long long *npc, unsigned long long *insn)
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
 
+	if (npc == NULL) return -1;
+	if (pc == NULL) return -1;
+	if (insn == NULL) return -1;
+
 	fd = sock_fd;
 
 	tx_buf[0] = 'R';
 	tx_size = 1;
-	rx_size = sizeof(uint64_t); // PC
+	rx_size = sizeof(uint64_t); // Next PC
 	rx_size += sizeof(uint64_t); // Instruction
+	rx_size += sizeof(uint64_t); // PC
 
 resend:
 	ret = send(fd, tx_buf, tx_size, 0);
@@ -84,6 +89,8 @@ resend:
 
 	rx_offset = 0;
 	memcpy(npc, rx_buf + rx_offset, sizeof(*npc));
+	rx_offset += sizeof(uint64_t);
+	memcpy(pc, rx_buf + rx_offset, sizeof(*pc));
 	rx_offset += sizeof(uint64_t);
 	memcpy(insn, rx_buf + rx_offset, sizeof(*insn));
 	
