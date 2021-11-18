@@ -5,21 +5,30 @@ module sim_intf_tb;
 	longint pc_factual;
 	int insn;
 
-	int i;
+	int i = 0;
 	longint pc_list[] = {
-		'h0000000000000000,
-		'h0000000000001000,
-		'h0000000000001004,
-		'h00000000AAAA1008,
-		'h00000000BBBB1008,
-		'h0000000000001008,
-		'h000000000000100C,
-		'h00000000CCCC1010,
-		'h00000000DDDD1010,
-		'h0000000000001010
+		'h0000000080000000,
+		'h0000000080000004,
+		'h00000000AAAA0008,
+		'h00000000BBBB0008,
+		'h0000000080000008,
+		'h000000008000000C,
+		'h00000000CCCC0010,
+		'h00000000DDDD0010,
+		'h0000000080000010,
+		'h0000000080000014,
+		'h0000000080000018,
+		'h000000008000001C,
+		'h0000000080000020,
+		'h0000000080000024,
+		'h0000000080000028,
+		'h000000008000002C,
+		'h0000000080000030,
+		'h000000008000018C,
+		'h0000000080000190
 	};
 
-	sim_intf dut(clk, pc_try, pc_factual, insn, miss);
+	sim_intf #(.START_PC('h80000000), .INPUT_ELF("hello")) dut(clk, pc_try, pc_factual, insn, miss);
 
 	initial
 	begin
@@ -32,7 +41,6 @@ module sim_intf_tb;
 			$display("Dump FSDB: off");
 		end
 		clk = 0;
-		i = 0;
 	end
 
 	always begin
@@ -41,7 +49,7 @@ module sim_intf_tb;
 	end
 
 	always_ff @(posedge clk) begin
-		pc = pc_list[i];
+		pc_try = pc_list[i];
 		i = i + 1;
 		if (i >= $size(pc_list))
 			$finish();
@@ -51,7 +59,7 @@ module sim_intf_tb;
 		if (miss)
 			$display("%x miss %x", pc_try, pc_factual);
 		else
-			$display("%x ok, %x", pc_try, insn);
+			$display("%x ok, %x, %x", pc_try, pc_factual, insn);
 	end
 
 endmodule
