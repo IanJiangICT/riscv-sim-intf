@@ -1,4 +1,5 @@
 import "DPI-C" function int sc_init(input string host, input int port);
+import "DPI-C" function int sc_init_sim(input string elf, input int port);
 import "DPI-C" function int sc_run_next(output longint npc, output longint pc, output longint insn);
 
 module sim_intf(
@@ -9,6 +10,8 @@ module sim_intf(
 	output logic miss);
 	
 	parameter START_PC = 64'h80000000;
+	parameter INPUT_ELF= "";
+	parameter SIM_PORT = 12300;
 
 	// Current state but viewed as Next for user
 	longint npc;
@@ -18,7 +21,12 @@ module sim_intf(
 	initial
 	begin
 		int ret;
-		ret = sc_init("127.0.0.1", 8765);
+		string elf = INPUT_ELF;
+
+		if (elf.len() > 0)
+			ret = sc_init_sim(elf, SIM_PORT);
+		else
+			ret = sc_init("127.0.0.1", SIM_PORT);
 		if (ret < 0) begin
 			$display("Error: Failed sc_init");
 			$finish();
