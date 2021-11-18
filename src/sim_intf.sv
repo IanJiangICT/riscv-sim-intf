@@ -8,6 +8,8 @@ module sim_intf(
 	output int next_insn,
 	output logic miss);
 	
+	parameter START_PC = 64'h80000000;
+
 	// Current state but viewed as Next for user
 	longint npc;
 	longint cpc;
@@ -21,11 +23,15 @@ module sim_intf(
 			$display("Error: Failed sc_init");
 			$finish();
 		end
-		ret = sc_run_next(npc, cpc, ci);
-		if (ret < 0) begin
-			$display("Error: Failed sc_run_next");
-			$finish();
-		end
+
+		$display("Run until expected PC %x", START_PC);
+		do begin
+				ret = sc_run_next(npc, cpc, ci);
+				if (ret < 0) begin
+					$display("Error: Failed sc_run_next");
+					$finish();
+				end
+		end while (cpc != START_PC);
 	end
 
 	always_ff @(posedge clk) begin
