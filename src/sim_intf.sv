@@ -1,15 +1,17 @@
 import "DPI-C" function int sc_init(input string host, input int port);
-import "DPI-C" function int sc_run_next(output longint npc, output longint insn);
+import "DPI-C" function int sc_run_next(output longint npc, output longint pc, output longint insn);
 
 module sim_intf(
 	input clk,
-	input longint pc_in,
-	output longint pc_out,
-	output int insn,
+	input longint next_pc_check,
+	output longint next_pc,
+	output int next_insn,
 	output logic miss);
 	
+	// Current state but viewed as Next for user
 	longint npc;
-	longint ni;
+	longint cpc;
+	longint ci;
 
 	initial
 	begin
@@ -19,10 +21,15 @@ module sim_intf(
 			$display("Error: Failed sc_init");
 			$finish();
 		end
+		ret = sc_run_next(npc, cpc, ci);
+		if (ret < 0) begin
+			$display("Error: Failed sc_run_next");
+			$finish();
+		end
 	end
 
 	always_ff @(posedge clk) begin
-		check_pc(pc_in, pc_out, insn, miss);
+		check_pc(next_pc_check, next_pc, next_insn, miss);
 	end
 
 	function void check_pc;
@@ -33,10 +40,10 @@ module sim_intf(
 
 		int ret;
 
-		if (pc_i == npc) begin
-			ret = sc_run_next(npc, ni);
+		if (pc_i == cpc) begin
+			ret = sc_run_next(npc, cpc, ci);
 			if (ret < 0) begin
-				$display("Error: Failed sc_run");
+				$display("Error: Failed sc_run_next");
 				$finish();
 			end
 			m = 0;
@@ -44,8 +51,8 @@ module sim_intf(
 		else begin
 			m = 1;
 		end
-		pc_o = npc;
-		i = ni;
+		pc_o = cpc;
+		i = ci;
 	endfunction;
 
 endmodule
