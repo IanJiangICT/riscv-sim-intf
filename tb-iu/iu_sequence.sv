@@ -3,6 +3,7 @@ class iu_trans extends uvm_sequence_item;
 
 	rand bit miss;
 	rand longint pc_pre;
+	rand bit pc_pre_oe;
 	rand longint pc_curr;
 
 	function new(string name = "");
@@ -34,7 +35,7 @@ class iu_seq extends uvm_sequence#(iu_trans);
 				start_item(req);
 
 				finish_item(req);
-				if (req.pc_pre == pc_next) begin
+				if (req.pc_pre_oe && (req.pc_pre == pc_next)) begin
 					curr_missed = 0;
 					// Advance PC
 					pc_index++;
