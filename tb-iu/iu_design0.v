@@ -12,9 +12,9 @@ module iu(
 		START = 3'b010,
 		END   = 3'b100;
 
-	reg[2:0] state;
+	reg[2:0] state, nstate;
 	reg[7:0] cnt;
-	reg[63:0] npc;
+	reg[63:0] cpc, npc;
 
 	initial begin
 		state = IDLE;
@@ -25,29 +25,32 @@ module iu(
 	assign pc_pre = (state == END) ? npc : 0;
 	assign pc_pre_oe = (state == END) ? 1 : 0;
 
-	always @(posedge clk) begin
+	always @(*) begin
 		case (state)
 			IDLE:
 			if (miss) begin
-				state <= START;
-				npc <= dif.pc_curr + 4;
+				nstate = START;
+				cpc = dif.pc_curr;
 			end else begin
-				state <= START;
-				npc <= npc + 4;
+				nstate = START;
+				cpc = npc;
 			end
 			START:
 			if (cnt >= WORK_PERIOD) begin
-				state <= END;
+				nstate = END;
 			end else begin
-				state <= START;
+				nstate = START;
 			end
 			END:
-				state <= IDLE;
+				nstate = IDLE;
 		endcase
 	end
 
 	always @(posedge clk) begin
-		cnt = (state == IDLE) ? 0 : (cnt + 1);
+		state <= nstate;
+		cnt <= (state == IDLE) ? 0 : (cnt + 1);
+		npc <= cpc + 4; // Simple prediction
 	end
+
 endmodule
 
