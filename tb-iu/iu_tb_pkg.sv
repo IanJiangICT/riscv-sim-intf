@@ -29,8 +29,8 @@ package iu_tb_pkg;
 			`uvm_info("Agent", "run_phase", UVM_DEBUG);
 			phase.raise_objection(this);
 			begin
-				iu_seq seq;
-				seq = iu_seq::type_id::create("seq");
+				iu_seq_hello seq;
+				seq = iu_seq_hello::type_id::create("seq_hello");
 				seq.start(sequencer);
 			end
 			phase.drop_objection(this);
