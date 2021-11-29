@@ -2,6 +2,7 @@ module iu(
 	input clk,
 	input miss,
 	input reg[63:0] pc_curr,
+	input reg[31:0] insn_curr,
 	output reg[63:0] pc_pre,
 	output pc_pre_oe);
 
@@ -15,6 +16,7 @@ module iu(
 	reg[2:0] state, nstate;
 	reg[7:0] cnt;
 	reg[63:0] cpc, npc;
+	reg[31:0] insn;
 
 	initial begin
 		state = IDLE;
@@ -31,6 +33,7 @@ module iu(
 			if (miss) begin
 				nstate = START;
 				cpc = dif.pc_curr;
+				insn = dif.insn_curr;
 			end else begin
 				nstate = START;
 				cpc = npc;
