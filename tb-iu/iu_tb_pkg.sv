@@ -28,11 +28,19 @@ package iu_tb_pkg;
 		task run_phase(uvm_phase phase);
 			`uvm_info("Agent", "run_phase", UVM_DEBUG);
 			phase.raise_objection(this);
+			`ifdef HELLO_SEQ
 			begin
 				iu_seq_hello seq;
 				seq = iu_seq_hello::type_id::create("seq_hello");
 				seq.start(sequencer);
 			end
+			`else
+			begin
+				iu_seq_sim seq;
+				seq = iu_seq_sim::type_id::create("seq_sim");
+				seq.start(sequencer);
+			end
+			`endif
 			phase.drop_objection(this);
 		endtask
 
