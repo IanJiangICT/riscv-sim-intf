@@ -3,6 +3,7 @@ package iu_tb_pkg;
 	`include "iu_sequence.sv"
 	`include "iu_driver.sv"
 	`include "iu_monitor.sv"
+	`include "iu_scoreboard.sv"
 
 	class iu_agent extends uvm_agent;
 		`uvm_component_utils(iu_agent);
@@ -56,6 +57,7 @@ package iu_tb_pkg;
 		`uvm_component_utils(iu_env);
 
 		iu_agent agent;
+		iu_scoreboard scoreboard;
 
 		function new(string name, uvm_component parent);
 			super.new(name, parent);
@@ -65,6 +67,12 @@ package iu_tb_pkg;
 			super.build_phase(phase);
 			`uvm_info("Env", "build_phase", UVM_DEBUG);
 			agent = iu_agent::type_id::create("agent", this);
+			scoreboard = iu_scoreboard::type_id::create("scoreboard", this);
+		endfunction
+
+		function void connect_phase(uvm_phase phase);
+			`uvm_info("Env", "connect_phase", UVM_DEBUG);
+			agent.monitor.mon_ap.connect(scoreboard.ap_imp);
 		endfunction
 
 	endclass
