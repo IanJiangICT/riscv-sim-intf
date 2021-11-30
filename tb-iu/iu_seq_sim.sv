@@ -10,10 +10,6 @@ class iu_seq_sim extends uvm_sequence#(iu_trans);
 		super.new(name);
 	endfunction
 
-	function void build_phase(uvm_phase phase);
-		`uvm_info("Seq", "build_phase", UVM_DEBUG);
-	endfunction
-
 	task body;
 		int ret;
 		longint pc_curr;
