@@ -26,9 +26,9 @@ class iu_driver extends uvm_driver#(iu_trans);
 			@(negedge dut_vif.clk);
 			dut_vif.miss = req.miss;
 			dut_vif.pc_curr = req.pc_curr;
-			@(posedge dut_vif.clk);
+			dut_vif.insn_curr = req.insn_curr;
+			@(posedge dut_vif.pc_pre_oe);
 			req.pc_pre = dut_vif.pc_pre;
-			req.pc_pre_oe = dut_vif.pc_pre_oe;
 			seq_item_port.item_done(req);
 		end
 	endtask

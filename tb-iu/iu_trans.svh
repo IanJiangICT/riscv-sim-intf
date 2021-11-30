@@ -5,8 +5,8 @@ class iu_trans extends uvm_sequence_item;
 
 	rand bit miss;
 	rand longint pc_pre;
-	rand bit pc_pre_oe;
 	rand longint pc_curr;
+	rand int insn_curr;
 
 	function new(string name = "");
 		super.new(name);
