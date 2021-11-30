@@ -2,12 +2,15 @@ package iu_tb_pkg;
 	import uvm_pkg::*;
 	`include "iu_sequence.sv"
 	`include "iu_driver.sv"
+	`include "iu_monitor.sv"
 
 	class iu_agent extends uvm_agent;
 		`uvm_component_utils(iu_agent);
 
 		iu_driver driver;
 		uvm_sequencer#(iu_trans) sequencer;
+		uvm_analysis_port#(iu_trans) agent_ap;
+		iu_monitor monitor;
 
 		function new(string name, uvm_component parent);
 			super.new(name, parent);
@@ -18,11 +21,14 @@ package iu_tb_pkg;
 			`uvm_info("Agent", "build_phase", UVM_DEBUG);
 			driver = iu_driver::type_id::create("driver", this);
 			sequencer = uvm_sequencer#(iu_trans)::type_id::create("sequencer", this);
+			agent_ap = new("agent_ap", this);
+			monitor = iu_monitor::type_id::create("monitor", this);
 		endfunction
 
 		function void connect_phase(uvm_phase phase);
 			`uvm_info("Agent", "connect_phase", UVM_DEBUG);
 			driver.seq_item_port.connect(sequencer.seq_item_export);
+			monitor.mon_ap.connect(agent_ap);
 		endfunction
 
 		task run_phase(uvm_phase phase);
