@@ -23,11 +23,11 @@ class iu_driver extends uvm_driver#(iu_trans);
 		dut_vif.pc_curr = 0;
 		forever begin
 			seq_item_port.get_next_item(req);
-			@(negedge dut_vif.clk);
+			@(posedge dut_vif.clk);
 			dut_vif.miss = req.miss;
 			dut_vif.pc_curr = req.pc_curr;
 			dut_vif.insn_curr = req.insn_curr;
-			@(posedge dut_vif.pc_pre_oe);
+			while (dut_vif.pc_pre_oe == 0) @(posedge dut_vif.clk);
 			req.pc_pre = dut_vif.pc_pre;
 			seq_item_port.item_done(req);
 		end
