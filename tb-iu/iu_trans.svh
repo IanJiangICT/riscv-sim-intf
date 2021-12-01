@@ -11,5 +11,12 @@ class iu_trans extends uvm_sequence_item;
 	function new(string name = "");
 		super.new(name);
 	endfunction
+
+	function copy(iu_trans trans);
+		this.miss = trans.miss;
+		this.pc_pre = trans.pc_pre;
+		this.pc_curr = trans.pc_curr;
+		this.insn_curr = trans.insn_curr;
+	endfunction
 endclass
 `endif
