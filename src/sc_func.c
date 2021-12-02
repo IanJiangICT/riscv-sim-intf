@@ -139,3 +139,50 @@ resend:
 	
 	return 1;
 }
+
+int sc_force_pc(unsigned long long pc)
+{
+	int fd;
+	int tx_size;
+	int rx_size;
+	int rx_offset;
+	char tx_buf[SOCK_BUF_SIZE];
+	char rx_buf[SOCK_BUF_SIZE];
+	int ret;
+	unsigned long long actual_pc;
+
+	fd = sock_fd;
+
+	tx_buf[0] = 'F';
+	tx_size = 1;
+	memcpy(tx_buf + tx_size, &pc, sizeof(uint64_t));
+	tx_size += sizeof(uint64_t);
+	rx_size = sizeof(uint64_t); // Next PC
+	rx_size += sizeof(uint64_t); // PC
+	rx_size += sizeof(uint64_t); // Instruction
+
+	ret = send(fd, tx_buf, tx_size, 0);
+	if (ret != tx_size) {
+		printf("SC Error: Failed to send\n");
+		return -1;
+	}
+
+	ret = recv(fd, rx_buf, sizeof(rx_buf), 0);
+	if (ret < 0) {
+		printf("SC Error: Failed to receive\n");
+		return -1;
+	}
+	if (ret != rx_size) {
+		printf("SC Error: Failed to receive ret = %d\n", ret);
+		return -1;
+	}
+
+	rx_offset = 0;
+	rx_offset += sizeof(uint64_t);
+	memcpy(&actual_pc, rx_buf + rx_offset, sizeof(actual_pc));
+	if (actual_pc != pc) {
+		printf("SC Error: Failed to force pc. Req 0x%llx Got 0x%llx\n", pc, actual_pc);
+		return -1;
+	}
+	return 1;
+}
