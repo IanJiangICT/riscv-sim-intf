@@ -1,10 +1,14 @@
+import "DPI-C" function int sc_init_sim(input string elf, input int port);
+import "DPI-C" function int sc_run_next(output longint npc, output longint pc, output longint insn);
+`define SIM_PORT 12300
+
 class SimProxy;
 	typedef enum {SPIKE_LOG, SPIKE_RUNTIME} SimType;
 	string sim_name;
 	SimType sim_type;
 
 	// For Spike runtime
-	string spike_host;
+	string elf_filename;
 	int spike_port;
 
 	// For Spike log
@@ -28,12 +32,19 @@ class SimProxy;
 		return 1;
 	endfunction
 
-	function int InitSpikeRuntime(string host, int port);
-		$display("[SP]: Start Spike %s:%d", spike_host, spike_port);
-		$display("[SP]: TODO");
+	function int InitSpikeRuntime(string elf, int port = SIM_PORT);
+		int ret;
+
+		$display("[SP]: Start Spike %d %s", port, elf);
 		sim_type = SPIKE_RUNTIME;
-		spike_host = host;
+		elf_filename = elf;
 		spike_port = port;
+
+		ret = sc_init_sim(elf, port);
+		if (ret < 0) begin
+			$display("[SP] Error: Failed to start Spike %d %s", port, elf);
+			return -1;
+		end
 		return 1;
 	endfunction
 
@@ -61,9 +72,29 @@ class SimProxy;
 		return 1;	
 	endfunction
 
+	local function int RunNextSpikeRuntime(output longint pc, output int insn);
+		longint npc;
+		longint cpc;
+		longint ci;
+		int ret;
+
+		ret = sc_run_next(npc, cpc, ci);
+		if (ret < 0) begin
+			$display("Error: Failed sc_run_next");
+			return -1;
+		end
+		pc = cpc;
+		insn = ci;
+		return 1;
+	endfunction
+
 	function int RunNext(output longint pc, int insn);
 		if (sim_type == SPIKE_LOG)
 			return RunNextSpikeLog(pc, insn);
+		else if (sim_type == SPIKE_RUNTIME)
+			return RunNextSpikeRuntime(pc, insn);
+		else
+			return -1;
 	endfunction
 
 endclass
