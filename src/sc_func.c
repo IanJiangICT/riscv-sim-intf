@@ -198,7 +198,7 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	char tx_buf[SOCK_BUF_SIZE];
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
-	uint64_t cnt = (uint64_t)code_len;
+	uint64_t cnt;
 	uint64_t val_u64;
 	int i;
 
@@ -211,8 +211,6 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 
 	tx_buf[0] = 'D';
 	tx_size = 1;
-	memcpy(tx_buf + tx_size, &cnt, sizeof(uint64_t));
-	tx_size += sizeof(uint64_t);
 	memcpy(tx_buf + tx_size, code_data, code_len);
 	tx_size += code_len;
 
