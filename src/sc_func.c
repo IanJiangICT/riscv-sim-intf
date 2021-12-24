@@ -191,10 +191,61 @@ int sc_force_pc(unsigned long long pc)
 
 int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_list)
 {
+	int fd;
+	int tx_size;
+	int rx_size;
+	int rx_offset;
+	char tx_buf[SOCK_BUF_SIZE];
+	char rx_buf[SOCK_BUF_SIZE];
+	int ret;
+	uint64_t cnt = (uint64_t)code_len;
+	uint64_t val_u64;
+	int i;
+
 	if (code_len <= 0) return -1;
 	if (code_data == NULL) return -1;
 	if (insn_max <= 0) return -1;
 	if (insn_list == NULL) return -1;
 
-	return 0;
+	fd = sock_fd;
+
+	tx_buf[0] = 'D';
+	tx_size = 1;
+	memcpy(tx_buf + tx_size, &cnt, sizeof(uint64_t));
+	tx_size += sizeof(uint64_t);
+	memcpy(tx_buf + tx_size, code_data, code_len);
+	tx_size += code_len;
+
+	ret = send(fd, tx_buf, tx_size, 0);
+	if (ret != tx_size) {
+		printf("SC Error: Failed to send\n");
+		return -1;
+	}
+
+	ret = recv(fd, rx_buf, sizeof(rx_buf), 0);
+	if (ret < 0) {
+		printf("SC Error: Failed to receive\n");
+		return -1;
+	}
+	rx_size = ret;
+	if (rx_size < sizeof(uint64_t)) {
+		printf("SC Error: Received entry count\n");
+		return -1;
+	}
+	rx_offset = 0;
+	memcpy(&cnt, rx_buf + rx_offset, sizeof(uint64_t));
+	rx_offset += sizeof(uint64_t);
+
+	for (i = 0; i < cnt; i++) {
+		memcpy(&val_u64, rx_buf + rx_offset, sizeof(uint64_t));
+		insn_list[i].len = (unsigned int)val_u64;
+		rx_offset += sizeof(uint64_t);
+		memcpy(&val_u64, rx_buf + rx_offset, sizeof(uint64_t));
+		insn_list[i].insn= (unsigned long)val_u64;
+		rx_offset += sizeof(uint64_t);
+		memcpy(insn_list[i].disasm, rx_buf + rx_offset, INSN_DISASM_MAX_LEN);
+		rx_offset += INSN_DISASM_MAX_LEN;
+		insn_list[i].disasm[INSN_DISASM_MAX_LEN-1] = '\0';
+	}
+	return i;
 }
