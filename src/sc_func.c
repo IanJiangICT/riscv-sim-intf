@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "sc_types.h"
+
 #define SOCK_BUF_SIZE 1024
 
 static int sock_fd;
@@ -185,4 +187,14 @@ int sc_force_pc(unsigned long long pc)
 		return -1;
 	}
 	return 1;
+}
+
+int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_list)
+{
+	if (code_len <= 0) return -1;
+	if (code_data == NULL) return -1;
+	if (insn_max <= 0) return -1;
+	if (insn_list == NULL) return -1;
+
+	return 0;
 }
