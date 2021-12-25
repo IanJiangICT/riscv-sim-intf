@@ -211,7 +211,7 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	uint64_t val_u64;
 	int i;
 
-	if (code_len <= 0) return -1;
+	if (code_len < 0) return -1;
 	if (code_data == NULL) return -1;
 	if (insn_max <= 0) return -1;
 	if (insn_list == NULL) return -1;
@@ -221,9 +221,15 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	tx_buf[0] = 'D';
 	tx_size = 1;
 	tx_size += sizeof(*arg_size);
-	memcpy(tx_buf + tx_size, code_data, code_len);
-	tx_size += code_len;
-	*arg_size = tx_size - (1 + sizeof(*arg_size));
+
+	if (code_len == 0) { // Request with zero length of code implies a new session
+		*arg_size = 0;
+	} else {
+		memcpy(tx_buf + tx_size, code_data, code_len);
+		tx_size += code_len;
+		*arg_size = tx_size - (1 + sizeof(*arg_size));
+	}
+
 	ret = send(fd, tx_buf, tx_size, 0);
 	if (ret != tx_size) {
 		printf("SC Error: Failed to send\n");
@@ -236,6 +242,10 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	}
 	printf(">\n");
 #endif
+
+	if (code_len == 0) { // No response to receive
+		return 0;
+	}
 
 	/* Receive instruction count */
 	rx_offset = 0;
