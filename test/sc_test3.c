@@ -110,7 +110,10 @@ int main(int argc, char **argv)
 		insn_cnt = sc_decode(code_len, code_data, insn_max, insn_list);
 		printf("SC Test: Got %d instructions:\n", insn_cnt);
 		for (j = 0; j < insn_cnt; j++) {
-			printf("  [%2d] %d %08lx %s\n", j, insn_list[j].len, insn_list[j].insn, insn_list[j].disasm);
+			printf("  [%2d] %d %08lx %c %s\n", j,
+				   insn_list[j].len, insn_list[j].insn,
+				   insn_match_extension(insn_list[j].disasm),
+				   insn_list[j].disasm);
 		}
 		stream_offset += code_len;
 	}
