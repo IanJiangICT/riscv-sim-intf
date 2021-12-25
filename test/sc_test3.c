@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "sc_func.h"
 
-#if 1
+#if 0
 char code_stream[] = {
 0x97, 0x02, 0x00, 0x00, 0x93, 0x82, 0x42, 0x03, 0x73, 0x90, 0x52, 0x30, 0xf3, 0x22, 0x40, 0xf1,
 0x93, 0x92, 0xa2, 0x00, 0x17, 0x21, 0x00, 0x00, 0x13, 0x01, 0xc1, 0x49, 0x33, 0x01, 0x51, 0x00,
@@ -75,35 +76,45 @@ char code_stream[] = {
 
 int main(int argc, char **argv)
 {
-	char elf[] = "./hello";
 	unsigned int port = 8600;
 	int ret;
 
 	int i;
 	int j;
 	int stream_offset;
-	int code_len;
+	int code_len = 64;
 	char *code_data;
-	insn_info_t insn_list[16];
-	int insn_max = sizeof(insn_list)/sizeof(insn_info_t);
+	insn_info_t *insn_list;
+	int insn_max = code_len / 2 + 1;
 	int insn_cnt;
 
-	ret = sc_init_sim(elf, port);
+	printf("SC Test: Init\n");
+
+	ret = sc_init("127.0.0.1", port);
+	//ret = sc_init_sim(elf, port);
 	if (ret < 0) {
 		return -1;
 	}
-	printf("SC Test: Init\n");
+
+	printf("SC Test: Allocate insn_list...\n");
+	insn_list = malloc(sizeof(*insn_list) * insn_max);
+	if (insn_list == NULL) {
+		printf("Error: Failed to allocate insn_list\n");
+		return -1;
+	}
 
 	stream_offset = 0;
-	code_len = 64;
 	for (i = 0; i < 3; i++) {
 		code_data = code_stream + stream_offset;
+		printf("SC Test: Decode code group %d of size %d\n", i, code_len);
 		insn_cnt = sc_decode(code_len, code_data, insn_max, insn_list);
+		printf("SC Test: Got %d instructions:\n", insn_cnt);
 		for (j = 0; j < insn_cnt; j++) {
-			printf("[%d][%d] %d %08lx %s\n", i, j, insn_list[j].len, insn_list[j].insn, insn_list[j].disasm);
+			printf("  [%2d] %d %08lx %s\n", j, insn_list[j].len, insn_list[j].insn, insn_list[j].disasm);
 		}
 		stream_offset += code_len;
 	}
 
+	free(insn_list);
 	return 0;
 }

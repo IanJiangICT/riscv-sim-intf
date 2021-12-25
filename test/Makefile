@@ -27,4 +27,4 @@ sc_test2: sc_test2.c $(SRC_DIR)/sc_func.c
 	$(CC) $(CFLAGS) $(SRC_DIR)/sc_func.c sc_test2.c -o $@
 
 sc_test3: sc_test3.c $(SRC_DIR)/sc_func.c
-	$(CC) $(CFLAGS) $(SRC_DIR)/sc_func.c sc_test3.c -o $@
+	$(CC) $(CFLAGS) -fno-stack-protector $(SRC_DIR)/sc_func.c sc_test3.c -o $@
