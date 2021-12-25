@@ -325,3 +325,58 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 #endif
 	return i;
 }
+
+struct imt_ext {
+	unsigned char ext;
+	int prefix_len;
+	char *prefix_str;
+	int feature_len;
+	char *feature_str;
+};
+
+static struct imt_ext lut_ext[] = {
+	{ .ext = RVC, .prefix_len = 2, .prefix_str = "c.",  .feature_len = 0, .feature_str = ""},
+	{ .ext = RVD, .prefix_len = 1, .prefix_str = "f",   .feature_len = 2, .feature_str = ".d"},
+	{ .ext = RVF, .prefix_len = 1, .prefix_str = "f",   .feature_len = 0, .feature_str = ""},
+	{ .ext = RVA, .prefix_len = 3, .prefix_str = "amo", .feature_len = 1, .feature_str = "."},
+	{ .ext = RVV, .prefix_len = 3, .prefix_str = "amo", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVA, .prefix_len = 2, .prefix_str = "lr",  .feature_len = 0, .feature_str = ""},
+	{ .ext = RVA, .prefix_len = 2, .prefix_str = "sc",  .feature_len = 0, .feature_str = ""},
+	{ .ext = RVM, .prefix_len = 3, .prefix_str = "mul", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVM, .prefix_len = 3, .prefix_str = "div", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVM, .prefix_len = 3, .prefix_str = "rem", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVV, .prefix_len = 1, .prefix_str = "v",   .feature_len = 0, .feature_str = ""},
+	{ .ext = RVP, .prefix_len = 3, .prefix_str = "csr", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVP, .prefix_len = 3, .prefix_str = "wfi", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVP, .prefix_len = 3, .prefix_str = "mre", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVP, .prefix_len = 3, .prefix_str = "sre", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVB, .prefix_len = 0, .prefix_str = "",    .feature_len = 0, .feature_str = ""},
+	{ .ext = RV0, .prefix_len = 0, .prefix_str = "",    .feature_len = 0, .feature_str = ""},
+};
+
+unsigned char insn_match_extension(const char *disasm)
+{
+	int i = 0;
+	unsigned char ext = RV0;
+	if (disasm == NULL) return ext;
+
+	do {
+		if (lut_ext[i].prefix_len == 0) {
+			break;
+		}
+		if (strncmp(disasm, lut_ext[i].prefix_str, lut_ext[i].prefix_len) != 0) {
+			i++;
+			continue;
+		}
+		if (lut_ext[i].feature_len == 0) {
+			break;
+		}
+		if (strstr(disasm, lut_ext[i].feature_str) == NULL) {
+			i++;
+			continue;
+		}
+	} while (lut_ext[i].ext != RV0);
+
+	ext = lut_ext[i].ext;
+	return ext;
+}

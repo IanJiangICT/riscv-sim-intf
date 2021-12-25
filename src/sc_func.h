@@ -9,4 +9,6 @@ int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long l
 int sc_force_pc(unsigned long long new_pc);
 int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_list);
 
+unsigned char insn_match_extension(const char *disasm);
+
 #endif
