@@ -11,7 +11,7 @@
 
 #include "sc_types.h"
 
-#define SOCK_BUF_SIZE 1024
+#define SOCK_BUF_SIZE 4096
 
 static int sock_fd;
 
@@ -38,7 +38,7 @@ int sc_init(char *host, unsigned int port)
 	}
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length); 
+	memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);
 	addr.sin_port = htons(port);
 
 	ret = connect(fd, (struct sockaddr *)&addr, sizeof(addr));
@@ -104,6 +104,7 @@ int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long l
 	char tx_buf[SOCK_BUF_SIZE];
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
+	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
 
 	if (npc == NULL) return -1;
 	if (pc == NULL) return -1;
@@ -113,6 +114,8 @@ int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long l
 
 	tx_buf[0] = 'R';
 	tx_size = 1;
+	tx_size += sizeof(*arg_size);
+	*arg_size = 0;
 	rx_size = sizeof(uint64_t); // Next PC
 	rx_size += sizeof(uint64_t); // Instruction
 	rx_size += sizeof(uint64_t); // PC
@@ -151,14 +154,17 @@ int sc_force_pc(unsigned long long pc)
 	char tx_buf[SOCK_BUF_SIZE];
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
+	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
 	unsigned long long actual_pc;
 
 	fd = sock_fd;
 
 	tx_buf[0] = 'F';
 	tx_size = 1;
+	tx_size += sizeof(*arg_size);
 	memcpy(tx_buf + tx_size, &pc, sizeof(uint64_t));
 	tx_size += sizeof(uint64_t);
+	*arg_size = tx_size - (1 + sizeof(*arg_size));
 	rx_size = sizeof(uint64_t); // Next PC
 	rx_size += sizeof(uint64_t); // PC
 	rx_size += sizeof(uint64_t); // Instruction
@@ -198,7 +204,10 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	char tx_buf[SOCK_BUF_SIZE];
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
-	uint64_t cnt;
+	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
+	uint16_t insn_cnt;
+	int cnt_size = sizeof(insn_cnt);
+	int list_size;
 	uint64_t val_u64;
 	int i;
 
@@ -211,30 +220,86 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 
 	tx_buf[0] = 'D';
 	tx_size = 1;
+	tx_size += sizeof(*arg_size);
 	memcpy(tx_buf + tx_size, code_data, code_len);
 	tx_size += code_len;
-
+	*arg_size = tx_size - (1 + sizeof(*arg_size));
 	ret = send(fd, tx_buf, tx_size, 0);
 	if (ret != tx_size) {
 		printf("SC Error: Failed to send\n");
 		return -1;
 	}
+#ifdef SC_DEBUG
+	printf("<tx %4d:", tx_size);
+	for (i = 0; i < tx_size; i++) {
+		printf(" %02x", (unsigned char)tx_buf[i]);
+	}
+	printf(">\n");
+#endif
 
-	ret = recv(fd, rx_buf, sizeof(rx_buf), 0);
-	if (ret < 0) {
-		printf("SC Error: Failed to receive\n");
-		return -1;
-	}
-	rx_size = ret;
-	if (rx_size < sizeof(uint64_t)) {
-		printf("SC Error: Received entry count\n");
-		return -1;
-	}
+	/* Receive instruction count */
 	rx_offset = 0;
-	memcpy(&cnt, rx_buf + rx_offset, sizeof(uint64_t));
-	rx_offset += sizeof(uint64_t);
+	while (1) {
+		rx_size = recv(fd, rx_buf + rx_offset, cnt_size - rx_offset, 0);
+#ifdef SC_DEBUG
+		printf("<rx %4d at %4d:", rx_size, rx_offset);
+		for (i = 0; i < cnt_size; i++) {
+			printf(" %02x", (unsigned char)rx_buf[i]);
+		}
+		printf(">\n");
+#endif
+		if (rx_size < 0) {
+			printf("SC Error: Failed to receive\n");
+			return -1;
+		} else if (rx_size == 0) {
+			printf("SC Server disconnected\n");
+			return -1;
+		} else if ((rx_size + rx_offset) < cnt_size) {
+			rx_offset += rx_size;
+			continue;
+		} else {
+			break;
+		}
+	}
+	memcpy(&insn_cnt, rx_buf, sizeof(insn_cnt));
 
-	for (i = 0; i < cnt; i++) {
+	if (insn_cnt <= 0) {
+		return 0;
+	}
+
+	/* Receive instruciton list */
+	list_size = (sizeof(uint64_t) + sizeof(uint64_t) + INSN_DISASM_MAX_LEN) * insn_cnt;
+	if (cnt_size + list_size > SOCK_BUF_SIZE) {
+		printf("SC Error: Recv buffer %d not large enough for %d instructions\n",
+			   SOCK_BUF_SIZE, insn_cnt);
+	}
+	rx_offset = cnt_size;
+	while (1) {
+		rx_size = recv(fd, rx_buf + rx_offset, cnt_size + list_size - rx_offset, 0);
+#ifdef SC_DEBUG
+		printf("<rx %4d at %4d:", rx_size, rx_offset);
+		for (i = 0; i < cnt_size+rx_offset+rx_size; i++) {
+			printf(" %02x", (unsigned char)rx_buf[i]);
+		}
+		printf(">\n");
+#endif
+		if (rx_size < 0) {
+			printf("SC Error: Failed to receive\n");
+			return -1;
+		} else if (rx_size == 0) {
+			printf("SC Server disconnected\n");
+			return -1;
+		} else if ((rx_size + rx_offset) < (cnt_size + list_size)) {
+			rx_offset += rx_size;
+			continue;
+		} else {
+			break;
+		}
+	}
+
+	rx_size = cnt_size + list_size;
+	rx_offset = cnt_size;
+	for (i = 0; i < insn_cnt; i++) {
 		memcpy(&val_u64, rx_buf + rx_offset, sizeof(uint64_t));
 		insn_list[i].len = (unsigned int)val_u64;
 		rx_offset += sizeof(uint64_t);
@@ -245,5 +310,8 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 		rx_offset += INSN_DISASM_MAX_LEN;
 		insn_list[i].disasm[INSN_DISASM_MAX_LEN-1] = '\0';
 	}
+#ifdef SC_DEBUG
+	printf("D %d instructions OK\n", i);
+#endif
 	return i;
 }
