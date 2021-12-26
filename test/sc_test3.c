@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include "sc_func.h"
 
-#if 0
-char code_stream[] = {
+char code_stream_0[] = {
 0x97, 0x02, 0x00, 0x00, 0x93, 0x82, 0x42, 0x03, 0x73, 0x90, 0x52, 0x30, 0xf3, 0x22, 0x40, 0xf1,
 0x93, 0x92, 0xa2, 0x00, 0x17, 0x21, 0x00, 0x00, 0x13, 0x01, 0xc1, 0x49, 0x33, 0x01, 0x51, 0x00,
 0x73, 0x25, 0x40, 0xf1, 0x63, 0x14, 0x05, 0x00, 0x6f, 0x00, 0x40, 0x16, 0x73, 0x00, 0x50, 0x10,
@@ -37,8 +36,8 @@ char code_stream[] = {
 0x13, 0x05, 0x10, 0x00, 0xef, 0xf0, 0x5f, 0xf3, 0xef, 0x00, 0x80, 0x1a, 0x17, 0x23, 0x00, 0x00,
 0x03, 0x33, 0x43, 0xeb, 0x63, 0x04, 0x03, 0x00, 0x67, 0x00, 0x03, 0x00, 0x13, 0x01, 0x01, 0xff,
 };
-#else
-char code_stream[] = {
+
+char code_stream_1[] = {
 0x97, 0x02, 0x00, 0x00, 0x93, 0x82, 0xc2, 0x02, 0x73, 0x90, 0x52, 0x30, 0xf3, 0x22, 0x40, 0xf1,
 0xaa, 0x02, 0x17, 0x21, 0x00, 0x00, 0x13, 0x01, 0xe1, 0x49, 0x16, 0x91, 0x73, 0x25, 0x40, 0xf1,
 0x19, 0xe1, 0x6f, 0x00, 0xc0, 0x0e, 0x73, 0x00, 0x50, 0x10, 0xf5, 0xbf, 0x19, 0x71, 0x06, 0xe0,
@@ -72,7 +71,14 @@ char code_stream[] = {
 0x97, 0x17, 0x00, 0x00, 0x23, 0xa4, 0x07, 0xe2, 0xb7, 0x07, 0x00, 0x01, 0xdc, 0xc6, 0x17, 0x25,
 0x00, 0x00, 0x13, 0x05, 0x25, 0xe2, 0xef, 0x00, 0x80, 0x38, 0xa2, 0x60, 0x22, 0x85, 0x02, 0x64,
 };
-#endif
+
+static void print_hex(unsigned char *buf, int size)
+{
+	if (buf == NULL) return;
+	if (size <= 0) return;
+	for (int i = 0; i < size; i++) printf("%02x ", buf[i]);
+	printf("\n");
+}
 
 int main(int argc, char **argv)
 {
@@ -81,11 +87,13 @@ int main(int argc, char **argv)
 
 	int i;
 	int j;
+	char *stream_start;
 	int stream_offset;
-	int code_len = 64;
+	int group_cnt;
+	int group_size = 64;
 	char *code_data;
 	insn_info_t *insn_list;
-	int insn_max = code_len / 2 + 1;
+	int insn_max = group_size / 2 + 1;
 	int insn_cnt;
 
 	printf("SC Test: Init\n");
@@ -103,11 +111,15 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	printf("SC Test: Decode code stream 0\n");
+	stream_start = code_stream_0;
+	group_cnt = sizeof(code_stream_0) / group_size;
 	stream_offset = 0;
-	for (i = 0; i < 3; i++) {
-		code_data = code_stream + stream_offset;
-		printf("SC Test: Decode code group %d of size %d\n", i, code_len);
-		insn_cnt = sc_decode(code_len, code_data, insn_max, insn_list);
+	for (i = 0; i < group_cnt; i++) {
+		code_data = stream_start + stream_offset;
+		printf("SC Test: Decode code group %d of size %d\n", i, group_size);
+		print_hex((unsigned char *)code_data, group_size);
+		insn_cnt = sc_decode(group_size, code_data, insn_max, insn_list);
 		printf("SC Test: Got %d instructions:\n", insn_cnt);
 		for (j = 0; j < insn_cnt; j++) {
 			printf("  [%2d] %d %08lx %c %s\n", j,
@@ -115,7 +127,26 @@ int main(int argc, char **argv)
 				   insn_match_extension(insn_list[j].disasm),
 				   insn_list[j].disasm);
 		}
-		stream_offset += code_len;
+		stream_offset += group_size;
+	}
+
+	printf("SC Test: Decode code stream 1\n");
+	stream_start = code_stream_1;
+	group_cnt = sizeof(code_stream_1) / group_size;
+	stream_offset = 0;
+	for (i = 0; i < group_cnt; i++) {
+		code_data = stream_start + stream_offset;
+		printf("SC Test: Decode code group %d of size %d\n", i, group_size);
+		print_hex((unsigned char *)code_data, group_size);
+		insn_cnt = sc_decode(group_size, code_data, insn_max, insn_list);
+		printf("SC Test: Got %d instructions:\n", insn_cnt);
+		for (j = 0; j < insn_cnt; j++) {
+			printf("  [%2d] %d %08lx %c %s\n", j,
+				   insn_list[j].len, insn_list[j].insn,
+				   insn_match_extension(insn_list[j].disasm),
+				   insn_list[j].disasm);
+		}
+		stream_offset += group_size;
 	}
 
 	free(insn_list);
