@@ -31,6 +31,16 @@ enum insn_ext {
 	RVZ
 };
 
+enum insn_type {
+	ITB = 'B', // Branch
+	ITC = 'C', // Compute
+	ITF = 'F', // Fence
+	ITM = 'M', // Memory load/store
+	ITS = 'S', // System
+	ITT = 'T', // Trap
+	ITO = 'O'  // Others
+};
+
 #define INSN_DISASM_MAX_LEN 64
 typedef struct insn_info {
 	unsigned int len;
