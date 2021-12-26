@@ -311,7 +311,7 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	rx_offset = cnt_size;
 	for (i = 0; i < insn_cnt; i++) {
 		memcpy(&val_u64, rx_buf + rx_offset, sizeof(uint64_t));
-		insn_list[i].len = (unsigned int)val_u64;
+		insn_list[i].len = (unsigned long)val_u64;
 		rx_offset += sizeof(uint64_t);
 		memcpy(&val_u64, rx_buf + rx_offset, sizeof(uint64_t));
 		insn_list[i].insn= (unsigned long)val_u64;
