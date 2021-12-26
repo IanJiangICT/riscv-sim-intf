@@ -383,3 +383,45 @@ unsigned char insn_match_extension(const char *disasm)
 	ext = lut_ext[i].ext;
 	return ext;
 }
+
+struct imt_type {
+	unsigned char itype;
+	int prefix_cnt;
+	const char **prefix_list;
+};
+
+/* Lists of prefix strings of each type, excpet ITC (compute type).
+   Note: All others are sorted to type ITC */
+const char *imt_pl_m[] = {"l", "s", "fl", "fs", "c.l", "c.s", "lr.", "sc.", "vl", "vs"};
+const char *imt_pl_b[] = {"b", "j", "c.b", "c.j"};
+const char *imt_pl_t[] = {"wfi", "mret", "sret", "c.eb"};
+const char *imt_pl_s[] = {"csr"};
+const char *imt_pl_f[] = {"fen", "sfe"};
+
+const static struct imt_type lut_type[] = {
+	{ .itype = ITM, .prefix_cnt = sizeof(imt_pl_m)/sizeof(char *), .prefix_list = imt_pl_m},
+	{ .itype = ITB, .prefix_cnt = sizeof(imt_pl_b)/sizeof(char *), .prefix_list = imt_pl_b},
+	{ .itype = ITT, .prefix_cnt = sizeof(imt_pl_t)/sizeof(char *), .prefix_list = imt_pl_t},
+	{ .itype = ITS, .prefix_cnt = sizeof(imt_pl_s)/sizeof(char *), .prefix_list = imt_pl_s},
+	{ .itype = ITF, .prefix_cnt = sizeof(imt_pl_f)/sizeof(char *), .prefix_list = imt_pl_f},
+};
+
+unsigned char insn_match_type(const char *disasm)
+{
+	int i = 0;
+	int j = 0;
+	char *p = NULL;
+
+	if (disasm == NULL) return ITO;
+	if (strlen(disasm) <= 1) return ITO;
+
+	for (i = 0; i < sizeof(lut_type)/sizeof(struct imt_type); i++) {
+		for (j = 0; j < lut_type[i].prefix_cnt; j++) {
+			p = strstr(disasm, lut_type[i].prefix_list[j]);
+			if (p == disasm) {
+				return lut_type[i].itype;
+			}
+		}
+	}
+	return ITC;
+}
