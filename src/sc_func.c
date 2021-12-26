@@ -334,22 +334,25 @@ struct imt_ext {
 	char *feature_str;
 };
 
-static struct imt_ext lut_ext[] = {
+static const struct imt_ext lut_ext[] = {
 	{ .ext = RVC, .prefix_len = 2, .prefix_str = "c.",  .feature_len = 0, .feature_str = ""},
 	{ .ext = RVD, .prefix_len = 1, .prefix_str = "f",   .feature_len = 2, .feature_str = ".d"},
+	{ .ext = RVQ, .prefix_len = 1, .prefix_str = "f",   .feature_len = 2, .feature_str = ".q"},
 	{ .ext = RVF, .prefix_len = 1, .prefix_str = "f",   .feature_len = 0, .feature_str = ""},
 	{ .ext = RVA, .prefix_len = 3, .prefix_str = "amo", .feature_len = 1, .feature_str = "."},
-	{ .ext = RVV, .prefix_len = 3, .prefix_str = "amo", .feature_len = 0, .feature_str = ""},
 	{ .ext = RVA, .prefix_len = 2, .prefix_str = "lr",  .feature_len = 0, .feature_str = ""},
 	{ .ext = RVA, .prefix_len = 2, .prefix_str = "sc",  .feature_len = 0, .feature_str = ""},
 	{ .ext = RVM, .prefix_len = 3, .prefix_str = "mul", .feature_len = 0, .feature_str = ""},
 	{ .ext = RVM, .prefix_len = 3, .prefix_str = "div", .feature_len = 0, .feature_str = ""},
 	{ .ext = RVM, .prefix_len = 3, .prefix_str = "rem", .feature_len = 0, .feature_str = ""},
 	{ .ext = RVV, .prefix_len = 1, .prefix_str = "v",   .feature_len = 0, .feature_str = ""},
+	{ .ext = RVV, .prefix_len = 3, .prefix_str = "set", .feature_len = 0, .feature_str = ""},   // SETVL
+	{ .ext = RVV, .prefix_len = 3, .prefix_str = "amo", .feature_len = 0, .feature_str = ""},   // AMO* without .?
 	{ .ext = RVP, .prefix_len = 3, .prefix_str = "csr", .feature_len = 0, .feature_str = ""},
 	{ .ext = RVP, .prefix_len = 3, .prefix_str = "wfi", .feature_len = 0, .feature_str = ""},
-	{ .ext = RVP, .prefix_len = 3, .prefix_str = "mre", .feature_len = 0, .feature_str = ""},
-	{ .ext = RVP, .prefix_len = 3, .prefix_str = "sre", .feature_len = 0, .feature_str = ""},
+	{ .ext = RVP, .prefix_len = 3, .prefix_str = "mre", .feature_len = 0, .feature_str = ""},   // MRET
+	{ .ext = RVS, .prefix_len = 3, .prefix_str = "sre", .feature_len = 0, .feature_str = ""},   // SRET
+	{ .ext = RVS, .prefix_len = 3, .prefix_str = "sfe", .feature_len = 0, .feature_str = ""},   // SFENCE
 	{ .ext = RVB, .prefix_len = 0, .prefix_str = "",    .feature_len = 0, .feature_str = ""},
 	{ .ext = RV0, .prefix_len = 0, .prefix_str = "",    .feature_len = 0, .feature_str = ""},
 };
