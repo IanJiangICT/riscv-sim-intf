@@ -121,10 +121,12 @@ int main(int argc, char **argv)
 		print_hex((unsigned char *)code_data, group_size);
 		insn_cnt = sc_decode(group_size, code_data, insn_max, insn_list);
 		printf("SC Test: Got %d instructions:\n", insn_cnt);
+		printf("  [ i] Size Code     Ext Type : disasm\n");
 		for (j = 0; j < insn_cnt; j++) {
-			printf("  [%2d] %d %08lx %c %s\n", j,
+			printf("  [%2d] %4d %08lx   %c    %c : %s\n", j,
 				   insn_list[j].len, insn_list[j].insn,
 				   insn_match_extension(insn_list[j].disasm),
+				   insn_match_type(insn_list[j].disasm),
 				   insn_list[j].disasm);
 		}
 		stream_offset += group_size;
@@ -140,10 +142,12 @@ int main(int argc, char **argv)
 		print_hex((unsigned char *)code_data, group_size);
 		insn_cnt = sc_decode(group_size, code_data, insn_max, insn_list);
 		printf("SC Test: Got %d instructions:\n", insn_cnt);
+		printf("  [ i] Size Code     Ext Type : disasm\n");
 		for (j = 0; j < insn_cnt; j++) {
-			printf("  [%2d] %d %08lx %c %s\n", j,
+			printf("  [%2d] %4d %08lx   %c    %c : %s\n", j,
 				   insn_list[j].len, insn_list[j].insn,
 				   insn_match_extension(insn_list[j].disasm),
+				   insn_match_type(insn_list[j].disasm),
 				   insn_list[j].disasm);
 		}
 		stream_offset += group_size;
