@@ -103,6 +103,7 @@ class SimProxy;
 	endfunction
 
 	function int DecodeIStream(input byte i_stream[DEC_INSN_STREAM_CAP-1:0],
+                        output byte len[DEC_INSN_LIST_CAP-1:0],
                         output longint insn[DEC_INSN_LIST_CAP-1:0],
                         output byte ext[DEC_INSN_LIST_CAP-1:0],
                         output byte typ[DEC_INSN_LIST_CAP-1:0],
@@ -116,7 +117,7 @@ class SimProxy;
 		cnt = sc_decode(stream_cap, i_stream, insn_max, insn_list);
 		offset = 0;
 		for (int i = 0; i < cnt; i++) begin
-			//len[i] = longint'(insn_list[(offset+7):(offset+0)]);
+			len[i] = insn_list[offset+0];
 			insn[i] = longint'(insn_list[(offset+15):(offset+8)]);
 			ext[i] = insn_list[offset+16];
 			typ[i] = insn_list[offset+17];
