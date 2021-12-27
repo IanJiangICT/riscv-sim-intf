@@ -37,7 +37,7 @@ class SimProxy;
 		return 1;
 	endfunction
 
-	function int InitSpikeRuntime(string elf, int port = SIM_PORT);
+	function int InitSpikeRuntime(string elf, int port = `SIM_PORT);
 		int ret;
 
 		$display("[SP]: Start Spike %d %s", port, elf);
@@ -113,15 +113,23 @@ class SimProxy;
 		int insn_max = DEC_INSN_LIST_CAP;
 		int offset;
 		int cnt;
+		int i;
+		int j;
+		byte c;
 
 		cnt = sc_decode(stream_cap, i_stream, insn_max, insn_list);
 		offset = 0;
-		for (int i = 0; i < cnt; i++) begin
-			len[i] = insn_list[offset+0];
-			insn[i] = longint'(insn_list[(offset+15):(offset+8)]);
-			ext[i] = insn_list[offset+16];
-			typ[i] = insn_list[offset+17];
-			disasm[i] = string'({<<byte{insn_list[(offset+81):(offset+18)]}});
+		for (i = 0; i < cnt; i++) begin // Ref to struct insn_info in sc_types.h
+			len[i] = insn_list[offset + DEC_INSN_LEN_OFFSET]; // Only the 1st byte is enough at present
+			insn[i] = longint'(insn_list[(offset + DEC_INSN_INS_OFFSET) +:DEC_INSN_INS_SIZE]);
+			ext[i] = insn_list[offset + DEC_INSN_EXT_OFFSET];
+			typ[i] = insn_list[offset + DEC_INSN_TYP_OFFSET];
+			disasm[i] = "";
+			for (j = 0; j < DEC_INSN_DIS_SIZE; j++) begin
+				c = insn_list[offset + DEC_INSN_DIS_OFFSET + j];
+				disasm[i] = {disasm[i], c};
+				if (c == 0) break;
+			end
 			offset += DEC_INSN_INFO_SIZE;
 		end
 
