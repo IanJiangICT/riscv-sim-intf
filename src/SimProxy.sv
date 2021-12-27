@@ -107,7 +107,23 @@ class SimProxy;
                         output byte ext[DEC_INSN_LIST_CAP-1:0],
                         output byte typ[DEC_INSN_LIST_CAP-1:0],
                         output string disasm[DEC_INSN_LIST_CAP-1:0]);
+		int stream_cap = DEC_INSN_STREAM_CAP;
+		byte insn_list[DEC_INSN_LIST_SIZE-1:0];
+		int insn_max = DEC_INSN_LIST_CAP;
+		int offset;
 		int cnt;
+
+		cnt = sc_decode(stream_cap, i_stream, insn_max, insn_list);
+		offset = 0;
+		for (int i = 0; i < cnt; i++) begin
+			//len[i] = longint'(insn_list[(offset+7):(offset+0)]);
+			insn[i] = longint'(insn_list[(offset+15):(offset+8)]);
+			ext[i] = insn_list[offset+16];
+			typ[i] = insn_list[offset+17];
+			disasm[i] = string'({<<byte{insn_list[(offset+81):(offset+18)]}});
+			offset += DEC_INSN_INFO_SIZE;
+		end
+
 		return cnt;
 	endfunction
 
