@@ -10,6 +10,7 @@
 #include <errno.h>
 
 #include "sc_types.h"
+#include "sc_func.h"
 
 #define SOCK_BUF_SIZE 4096
 
@@ -320,6 +321,13 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 		rx_offset += INSN_DISASM_MAX_LEN;
 		insn_list[i].disasm[INSN_DISASM_MAX_LEN-1] = '\0';
 	}
+
+	/* Detect instruction features */
+	for (i = 0; i < insn_cnt; i++) {
+		insn_list[i].ext = insn_match_extension(insn_list[i].disasm);
+		insn_list[i].type = insn_match_type(insn_list[i].disasm);
+	}
+
 #ifdef SC_DEBUG
 	printf("D %d instructions OK\n", i);
 #endif
