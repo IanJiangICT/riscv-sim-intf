@@ -42,9 +42,11 @@ enum insn_type {
 };
 
 #define INSN_DISASM_MAX_LEN 64
-typedef struct insn_info {
+typedef struct __attribute__((packed)) insn_info {
 	unsigned long len;
 	unsigned long insn;
+	unsigned char ext;
+	unsigned char type;
 	char disasm[INSN_DISASM_MAX_LEN];
 } insn_info_t;
 
