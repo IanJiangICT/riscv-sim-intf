@@ -1,5 +1,10 @@
+import sc_cfg::*;
+
 import "DPI-C" function int sc_init_sim(input string elf, input int port);
 import "DPI-C" function int sc_run_next(output longint npc, output longint pc, output longint insn);
+import "DPI-C" function int sc_decode(input int code_len, input byte code_data[DEC_INSN_STREAM_CAP-1:0],
+                                      input int insn_max, output byte insn_list[DEC_INSN_LIST_SIZE-1:0]);
+
 `define SIM_PORT 12300
 
 class SimProxy;
@@ -95,6 +100,15 @@ class SimProxy;
 			return RunNextSpikeRuntime(pc, insn);
 		else
 			return -1;
+	endfunction
+
+	function int DecodeIStream(input byte i_stream[DEC_INSN_STREAM_CAP-1:0],
+                        output longint insn[DEC_INSN_LIST_CAP-1:0],
+                        output byte ext[DEC_INSN_LIST_CAP-1:0],
+                        output byte typ[DEC_INSN_LIST_CAP-1:0],
+                        output string disasm[DEC_INSN_LIST_CAP-1:0]);
+		int cnt;
+		return cnt;
 	endfunction
 
 endclass
