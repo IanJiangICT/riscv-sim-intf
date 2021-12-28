@@ -52,3 +52,57 @@ Source files to compile:
 
 - src/sim_intf.sv : Implement of module *sim_intf*
 - src/sc_func.c : State-Control operations between *sim_intf* and Spike
+
+## Workflow of SimProxy
+```
+UserApp   SimProxy                    sc_func
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Start     Init()                      sc_init()
+          RunUntil(0x800)             loop sc_run_next() until(npc == 0x800)
+                                      sc_get_state()
+          <S0: pc=800 npc=804 regs=x>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Decode    DecodeIStram()              sc_decode()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute   RunAt(0x804)                sc_force_pc(0x804)
+                                      sc_get_state()
+          <S0: pc=800 npc=804 regs=x>
+          <S1: pc=804 npc=808 regs=x>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute   RunAt(0x808)                sc_force_pc(0x808)
+                                      sc_get_state()
+          <S0: pc=800 npc=804 regs=x>
+          <S1: pc=804 npc=808 regs=x>
+          <S2: pc=808 npc=8A0 regs=x>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute   RunAt(0x80C)                sc_force_pc(0x80C)
+(wrong)                               sc_get_state()
+          <S0: pc=800 npc=804 regs=x>
+          <S1: pc=804 npc=808 regs=x>
+          <S2: pc=808 npc=8A0 regs=x>
+          <S3: pc=80C npc=810 regs=x>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute   RunAt(0x810)                sc_force_pc(0x810)
+(wrong)                               sc_get_state()
+          <S0: pc=800 npc=804 regs=x>
+          <S1: pc=804 npc=808 regs=x>
+          <S2: pc=808 npc=8A0 regs=x>
+          <S3: pc=80C npc=810 regs=x>
+          <S4: pc=810 npc=814 regs=x>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Revert    RevertTo(0x808)             sc_set_state(regs)
+          <S0: pc=800 npc=804 regs=x>
+          <S1: pc=804 npc=808 regs=x>
+          <S2: pc=808 npc=8A0 regs=x>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute   RunAt(0x8A0)                sc_force_pc(0x8A0)
+                                      sc_get_state()
+          <S0: pc=800 npc=804 regs=x>
+          <S1: pc=804 npc=808 regs=x>
+          <S2: pc=808 npc=8A0 regs=x>
+          <S3: pc=8A0 npc=8A4 regs=x>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Decode    DecodeIStram()              sc_decode()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute ...
+```
