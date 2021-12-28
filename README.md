@@ -2,10 +2,18 @@
 Interface of RISC-V simulators, such as Spike.
 
 ```
-                   |----------|
-UserApp <--------> | sim_intf | <--(TCP Socket)--> Spike
-                   |----------|
-              module in SystemVerilog
+              |----------|
+              | User App |
+              |----------|
+                /  or  \
+   (SV Module) /        \   (SV Class)
+    |------------|    |------------|
+    |  sim_intf  |    |  SimProxy  |
+    |------------|    |------------|
+               \        /
+              |----------|        (TCP Socket)      |-------|
+              |  sc_func | <=======================>| Spike |
+              |----------|                          |-------|
 ```
 
 ## Getting started
