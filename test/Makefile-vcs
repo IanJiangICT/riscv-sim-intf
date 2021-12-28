@@ -7,6 +7,7 @@ CFLAGS += -full64 -sverilog
 
 tests = sim_intf_tb0
 tests += sim_intf_tb1
+tests += sp_tb0
 
 default: all
 
@@ -20,3 +21,6 @@ sim_intf_tb0: $(SRC_DIR)/sc_func.c $(SRC_DIR)/sim_intf.sv ./sim_intf_tb0.sv
 
 sim_intf_tb1: $(SRC_DIR)/sc_func.c $(SRC_DIR)/sim_intf.sv ./sim_intf_tb1.sv
 	$(VC) $(CFLAGS) $(SRC_DIR)/sc_func.c $(SRC_DIR)/sim_intf.sv ./sim_intf_tb1.sv -o $@
+
+sp_tb0: $(SRC_DIR)/sc_func.c $(SRC_DIR)/sc_cfg.sv $(SRC_DIR)/SimProxy.sv ./sp_tb0.sv
+	$(VC) $(CFLAGS) $(SRC_DIR)/sc_func.c $(SRC_DIR)/sc_cfg.sv $(SRC_DIR)/SimProxy.sv ./sp_tb0.sv -o $@
