@@ -93,7 +93,7 @@ class SimProxy;
 		return 1;
 	endfunction
 
-	function int RunNext(output longint pc, int insn);
+	function int RunNext(output longint pc, output int insn);
 		if (sim_type == SPIKE_LOG)
 			return RunNextSpikeLog(pc, insn);
 		else if (sim_type == SPIKE_RUNTIME)
