@@ -57,7 +57,7 @@ int sc_init(char *host, unsigned int port)
 #define SIM_CMD_PREFIX  "spike --state-ctrl="
 #define SIM_PORT_DEF    12300
 
-static int start_sim(char *elf, unsigned int port)
+static int sim_start(char *elf, unsigned int port)
 {
 	char cmd_str[CMD_STR_LEG_MAX] = {SIM_CMD_PREFIX};
 	int ret;
@@ -85,7 +85,7 @@ int sc_init_sim(char *elf, unsigned int port)
 	if (elf == NULL) return -1;
 	if (port <= 0) port = SIM_PORT_DEF;
 
-	ret = start_sim(elf, port);
+	ret = sim_start(elf, port);
 	if (ret < 0) {
 		return ret;
 	}

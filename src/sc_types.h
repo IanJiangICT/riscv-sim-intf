@@ -52,4 +52,14 @@ typedef struct __attribute__((packed)) {
 	uint8_t disasm[INSN_DISASM_MAX_LEN];
 } insn_info_t;
 
+typedef struct __attribute__((packed)) {
+	uint64_t pc;
+	uint64_t npc;
+	uint16_t log_cnt_r; // Reg
+	uint16_t log_cnt_l; // Load
+	uint16_t log_cnt_s; // Store
+	uint16_t padding;
+	uint64_t log_data[0]; // Following: <reg, val> x log_cnt_r, <addr, val, size> x log_cnt_l, <addr, val, size> x log_cnt_s
+} exe_record_t;
+
 #endif
