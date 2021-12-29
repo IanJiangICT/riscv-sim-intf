@@ -78,6 +78,80 @@ static int sim_start(char *elf, unsigned int port)
 	exit(0);
 }
 
+/*
+ * Return: count of bytes totally received
+ * Resulting rx_buf:
+ *   2_byte_of_cnt + cnt_bytes_of_data
+ */
+static int sim_recv(char *rx_buf)
+{
+	int fd;
+	int rx_size;
+	int rx_offset;
+	const int cnt_size = sizeof(uint16_t);
+	int data_size;
+
+	fd = sock_fd;
+	rx_offset = 0;
+	while (1) {
+		rx_size = recv(fd, rx_buf + rx_offset, cnt_size - rx_offset, 0);
+#ifdef SC_DEBUG
+		printf("<rx %4d at %4d:", rx_size, rx_offset);
+		for (i = 0; i < cnt_size; i++) {
+			printf(" %02x", (unsigned char)rx_buf[i]);
+		}
+		printf(">\n");
+#endif
+		if (rx_size < 0) {
+			printf("SC Error: Failed to receive\n");
+			return -1;
+		} else if (rx_size == 0) {
+			printf("SC Server disconnected\n");
+			return -1;
+		} else if ((rx_size + rx_offset) < cnt_size) {
+			rx_offset += rx_size;
+			continue;
+		} else {
+			break;
+		}
+	}
+	data_size = (int)(*((uint16_t *)rx_buf));
+	if (data_size <= 0) {
+		return cnt_size;
+	} else if (cnt_size + data_size > SOCK_BUF_SIZE) {
+		printf("SC Error: Recv buffer %d not large enough for %d data\n",
+			   SOCK_BUF_SIZE, data_size);
+		return -2;
+	}
+
+	rx_offset = cnt_size;
+	while (1) {
+		rx_size = recv(fd, rx_buf + rx_offset, cnt_size + data_size - rx_offset, 0);
+#ifdef SC_DEBUG
+		printf("<rx %4d at %4d:", rx_size, rx_offset);
+		for (i = 0; i < cnt_size+rx_offset+rx_size; i++) {
+			printf(" %02x", (unsigned char)rx_buf[i]);
+		}
+		printf(">\n");
+#endif
+		if (rx_size < 0) {
+			printf("SC Error: Failed to receive\n");
+			return -1;
+		} else if (rx_size == 0) {
+			printf("SC Server disconnected\n");
+			return -1;
+		} else if ((rx_size + rx_offset) < (cnt_size + data_size)) {
+			rx_offset += rx_size;
+			continue;
+		} else {
+			break;
+		}
+	}
+
+	rx_size = cnt_size + data_size;
+	return rx_size;
+}
+
 int sc_init_sim(char *elf, unsigned int port)
 {
 	int ret;
@@ -106,6 +180,7 @@ int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long l
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
 	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
+	int size_size = sizeof(uint16_t);
 
 	if (npc == NULL) return -1;
 	if (pc == NULL) return -1;
@@ -117,7 +192,8 @@ int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long l
 	tx_size = 1;
 	tx_size += sizeof(*arg_size);
 	*arg_size = 0;
-	rx_size = sizeof(uint64_t); // Next PC
+	rx_size = size_size;
+	rx_size += sizeof(uint64_t); // Next PC
 	rx_size += sizeof(uint64_t); // Instruction
 	rx_size += sizeof(uint64_t); // PC
 
@@ -128,15 +204,15 @@ resend:
 		return -1;
 	}
 
-	ret = recv(fd, rx_buf, sizeof(rx_buf), 0);
-	if (ret < 0) {
-		printf("SC Error: Failed to receive\n");
+	rx_size = sim_recv(rx_buf);
+	if (rx_size < size_size) {
 		return -1;
 	}
-	if (ret != rx_size || (rx_buf[0] & 0x07) == 0x05)
+
+	if ((rx_buf[size_size] & 0x07) == 0x05)
 		goto resend;
 
-	rx_offset = 0;
+	rx_offset = size_size;
 	memcpy(npc, rx_buf + rx_offset, sizeof(*npc));
 	rx_offset += sizeof(uint64_t);
 	memcpy(pc, rx_buf + rx_offset, sizeof(*pc));
@@ -156,6 +232,7 @@ int sc_force_pc(unsigned long long pc)
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
 	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
+	int size_size = sizeof(uint16_t);
 	unsigned long long actual_pc;
 
 	fd = sock_fd;
@@ -166,9 +243,6 @@ int sc_force_pc(unsigned long long pc)
 	memcpy(tx_buf + tx_size, &pc, sizeof(uint64_t));
 	tx_size += sizeof(uint64_t);
 	*arg_size = tx_size - (1 + sizeof(*arg_size));
-	rx_size = sizeof(uint64_t); // Next PC
-	rx_size += sizeof(uint64_t); // PC
-	rx_size += sizeof(uint64_t); // Instruction
 
 	ret = send(fd, tx_buf, tx_size, 0);
 	if (ret != tx_size) {
@@ -176,18 +250,17 @@ int sc_force_pc(unsigned long long pc)
 		return -1;
 	}
 
-	ret = recv(fd, rx_buf, sizeof(rx_buf), 0);
-	if (ret < 0) {
-		printf("SC Error: Failed to receive\n");
-		return -1;
-	}
-	if (ret != rx_size) {
-		printf("SC Error: Failed to receive ret = %d\n", ret);
+	rx_size = sim_recv(rx_buf);
+	if (rx_size < size_size) {
 		return -1;
 	}
 
-	rx_offset = 0;
-	rx_offset += sizeof(uint64_t);
+	// Response data: Next PC +  PC + Instruction
+	if ((rx_size - size_size) != sizeof(uint64_t) * 3) {
+		printf("SC Error: Not enough data in response\n");
+		return -1;
+	}
+	rx_offset = size_size + sizeof(uint64_t);
 	memcpy(&actual_pc, rx_buf + rx_offset, sizeof(actual_pc));
 	if (actual_pc != pc) {
 		printf("SC Error: Failed to force pc. Req 0x%llx Got 0x%llx\n", pc, actual_pc);
@@ -206,9 +279,8 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	char rx_buf[SOCK_BUF_SIZE];
 	int ret;
 	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
-	uint16_t insn_cnt;
-	int cnt_size = sizeof(insn_cnt);
-	int list_size;
+	int insn_cnt;
+	int size_size = sizeof(uint16_t);
 	uint64_t val_u64;
 	int i;
 
@@ -248,68 +320,14 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 		return 0;
 	}
 
-	/* Receive instruction count */
-	rx_offset = 0;
-	while (1) {
-		rx_size = recv(fd, rx_buf + rx_offset, cnt_size - rx_offset, 0);
-#ifdef SC_DEBUG
-		printf("<rx %4d at %4d:", rx_size, rx_offset);
-		for (i = 0; i < cnt_size; i++) {
-			printf(" %02x", (unsigned char)rx_buf[i]);
-		}
-		printf(">\n");
-#endif
-		if (rx_size < 0) {
-			printf("SC Error: Failed to receive\n");
-			return -1;
-		} else if (rx_size == 0) {
-			printf("SC Server disconnected\n");
-			return -1;
-		} else if ((rx_size + rx_offset) < cnt_size) {
-			rx_offset += rx_size;
-			continue;
-		} else {
-			break;
-		}
-	}
-	memcpy(&insn_cnt, rx_buf, sizeof(insn_cnt));
-
-	if (insn_cnt <= 0) {
-		return 0;
+	rx_size = sim_recv(rx_buf);
+	if (rx_size < size_size) {
+		return -1;
 	}
 
-	/* Receive instruciton list */
-	list_size = (sizeof(uint64_t) + sizeof(uint64_t) + INSN_DISASM_MAX_LEN) * insn_cnt;
-	if (cnt_size + list_size > SOCK_BUF_SIZE) {
-		printf("SC Error: Recv buffer %d not large enough for %d instructions\n",
-			   SOCK_BUF_SIZE, insn_cnt);
-	}
-	rx_offset = cnt_size;
-	while (1) {
-		rx_size = recv(fd, rx_buf + rx_offset, cnt_size + list_size - rx_offset, 0);
-#ifdef SC_DEBUG
-		printf("<rx %4d at %4d:", rx_size, rx_offset);
-		for (i = 0; i < cnt_size+rx_offset+rx_size; i++) {
-			printf(" %02x", (unsigned char)rx_buf[i]);
-		}
-		printf(">\n");
-#endif
-		if (rx_size < 0) {
-			printf("SC Error: Failed to receive\n");
-			return -1;
-		} else if (rx_size == 0) {
-			printf("SC Server disconnected\n");
-			return -1;
-		} else if ((rx_size + rx_offset) < (cnt_size + list_size)) {
-			rx_offset += rx_size;
-			continue;
-		} else {
-			break;
-		}
-	}
-
-	rx_size = cnt_size + list_size;
-	rx_offset = cnt_size;
+	/* Extract instruction information */
+	insn_cnt = *((uint16_t *)rx_buf) / (sizeof(uint64_t) + sizeof(uint64_t) + INSN_DISASM_MAX_LEN);
+	rx_offset = size_size;
 	for (i = 0; i < insn_cnt; i++) {
 		memcpy(&val_u64, rx_buf + rx_offset, sizeof(uint64_t));
 		insn_list[i].len = val_u64;
