@@ -125,9 +125,9 @@ int main(int argc, char **argv)
 		for (j = 0; j < insn_cnt; j++) {
 			printf("  [%2d] %4ld %08lx   %c    %c : %s\n", j,
 				   insn_list[j].len, insn_list[j].insn,
-				   insn_match_extension(insn_list[j].disasm),
-				   insn_match_type(insn_list[j].disasm),
-				   insn_list[j].disasm);
+				   (unsigned char)insn_list[j].ext,
+				   (unsigned char)insn_list[j].type,
+				   (unsigned char *)insn_list[j].disasm);
 		}
 		stream_offset += group_size;
 	}
@@ -146,9 +146,9 @@ int main(int argc, char **argv)
 		for (j = 0; j < insn_cnt; j++) {
 			printf("  [%2d] %4ld %08lx   %c    %c : %s\n", j,
 				   insn_list[j].len, insn_list[j].insn,
-				   insn_match_extension(insn_list[j].disasm),
-				   insn_match_type(insn_list[j].disasm),
-				   insn_list[j].disasm);
+				   (unsigned char)insn_list[j].ext,
+				   (unsigned char)insn_list[j].type,
+				   (unsigned char *)insn_list[j].disasm);
 		}
 		stream_offset += group_size;
 	}

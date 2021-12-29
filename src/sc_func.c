@@ -312,10 +312,10 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	rx_offset = cnt_size;
 	for (i = 0; i < insn_cnt; i++) {
 		memcpy(&val_u64, rx_buf + rx_offset, sizeof(uint64_t));
-		insn_list[i].len = (unsigned long)val_u64;
+		insn_list[i].len = val_u64;
 		rx_offset += sizeof(uint64_t);
 		memcpy(&val_u64, rx_buf + rx_offset, sizeof(uint64_t));
-		insn_list[i].insn= (unsigned long)val_u64;
+		insn_list[i].insn= val_u64;
 		rx_offset += sizeof(uint64_t);
 		memcpy(insn_list[i].disasm, rx_buf + rx_offset, INSN_DISASM_MAX_LEN);
 		rx_offset += INSN_DISASM_MAX_LEN;
@@ -324,8 +324,8 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 
 	/* Detect instruction features */
 	for (i = 0; i < insn_cnt; i++) {
-		insn_list[i].ext = insn_match_extension(insn_list[i].disasm);
-		insn_list[i].type = insn_match_type(insn_list[i].disasm);
+		insn_list[i].ext = insn_match_extension((char *)insn_list[i].disasm);
+		insn_list[i].type = insn_match_type((char *)insn_list[i].disasm);
 	}
 
 #ifdef SC_DEBUG

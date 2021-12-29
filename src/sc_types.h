@@ -1,6 +1,8 @@
 #ifndef SC_TYPES_H
 #define SC_TYPES_H
 
+#include <stdint.h>
+
 enum insn_ext {
 	RV0 = 0,
 	RVA = 'A',
@@ -42,12 +44,12 @@ enum insn_type {
 };
 
 #define INSN_DISASM_MAX_LEN 64
-typedef struct __attribute__((packed)) insn_info {
-	unsigned long len;
-	unsigned long insn;
-	unsigned char ext;
-	unsigned char type;
-	char disasm[INSN_DISASM_MAX_LEN];
+typedef struct __attribute__((packed)) {
+	uint64_t len;
+	uint64_t insn;
+	uint8_t ext;
+	uint8_t type;
+	uint8_t disasm[INSN_DISASM_MAX_LEN];
 } insn_info_t;
 
 #endif
