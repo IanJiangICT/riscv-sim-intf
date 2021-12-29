@@ -54,55 +54,71 @@ Source files to compile:
 - src/sc_func.c : State-Control operations between *sim_intf* and Spike
 
 ## Workflow of SimProxy
+
+StateQueueCapacity = 4
+
 ```
-UserApp   SimProxy                    sc_func
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Start     Init()                      sc_init()
-          RunUntil(0x800)             loop sc_run_next() until(npc == 0x800)
-                                      sc_get_state()
-          <S0: pc=800 npc=804 regs=x>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Decode    DecodeIStram()              sc_decode()
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Execute   RunAt(0x804)                sc_force_pc(0x804)
-                                      sc_get_state()
-          <S0: pc=800 npc=804 regs=x>
-          <S1: pc=804 npc=808 regs=x>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Execute   RunAt(0x808)                sc_force_pc(0x808)
-                                      sc_get_state()
-          <S0: pc=800 npc=804 regs=x>
-          <S1: pc=804 npc=808 regs=x>
-          <S2: pc=808 npc=8A0 regs=x>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Execute   RunAt(0x80C)                sc_force_pc(0x80C)
-(wrong)                               sc_get_state()
-          <S0: pc=800 npc=804 regs=x>
-          <S1: pc=804 npc=808 regs=x>
-          <S2: pc=808 npc=8A0 regs=x>
-          <S3: pc=80C npc=810 regs=x>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Execute   RunAt(0x810)                sc_force_pc(0x810)
-(wrong)                               sc_get_state()
-          <S0: pc=800 npc=804 regs=x>
-          <S1: pc=804 npc=808 regs=x>
-          <S2: pc=808 npc=8A0 regs=x>
-          <S3: pc=80C npc=810 regs=x>
-          <S4: pc=810 npc=814 regs=x>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Revert    RevertTo(0x808)             sc_set_state(regs)
-          <S0: pc=800 npc=804 regs=x>
-          <S1: pc=804 npc=808 regs=x>
-          <S2: pc=808 npc=8A0 regs=x>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Execute   RunAt(0x8A0)                sc_force_pc(0x8A0)
-                                      sc_get_state()
-          <S0: pc=800 npc=804 regs=x>
-          <S1: pc=804 npc=808 regs=x>
-          <S2: pc=808 npc=8A0 regs=x>
-          <S3: pc=8A0 npc=8A4 regs=x>
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Decode    DecodeIStram()              sc_decode()
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+UserApp  SimProxy         sc_func
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Start    Init()           sc_init()               MemPages[                        ]
+         RunUntil(0x800)  loop {                  <S0: pc=800 npc=804 regs=x memop0>
+                                 sc_run_next()    <S1:                             >
+                                 sc_save_state()  <S2:                             >
+                          } until(npc == 0x800)   <S3:                             >
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Decode   DecodeIStram()   sc_decode()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute  RunAt(0x804)     sc_force_pc(0x804)      MemPages[                        ]
+                          sc_save_state()         <S0: pc=800 npc=804 regs=x memop0>
+                                                  <S1: pc=804 npc=808 regs=x memop1>
+                                                  <S2:                             >
+                                                  <S3:                             >
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute  RunAt(0x808)     sc_force_pc(0x808)      MemPages[                        ]
+                          sc_save_state()         <S0: pc=800 npc=804 regs=x memop0>
+                                                  <S1: pc=804 npc=808 regs=x memop1>
+                                                  <S2: pc=808 npc=8A0 regs=x memop2>
+                                                  <S3:                             >
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute  RunAt(0x80C)     sc_force_pc(0x80C)      MemPages[                        ]
+(wrong)                   sc_save_state()         <S0: pc=800 npc=804 regs=x memop0>
+                                                  <S1: pc=804 npc=808 regs=x memop1>
+                                                  <S2: pc=808 npc=8A0 regs=x memop2>
+                                                  <S3: pc=80C npc=810 regs=x memop3>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute  RunAt(0x810)     sc_force_pc(0x810)      MemPages[     mem0               ]
+(wrong)                                           <                       ^--memop0>
+                                                  <S0: pc=804 npc=808 regs=x memop1>
+                                                  <S1: pc=808 npc=8A0 regs=x memop2>
+                                                  <S2: pc=80C npc=810 regs=x memop3>
+                                                  <S3: pc=810 npc=814 regs=x memop4>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Revert   RevertTo(0x808)  sc_recover_state(0x808) MemPages[     mem0               ]
+                            - sc_recover_mem()    <S0: pc=804 npc=808 regs=x memop1>
+                            - sc_recover_reg()    <S1: pc=808 npc=8A0 regs=x memop2>
+                                                  <S2:                             >
+                                                  <S3:                             >
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute  RunAt(0x8A0)     sc_force_pc(0x8A0)      MemPages[     mem0               ]
+                          sc_save_state()         <S0: pc=804 npc=808 regs=x memop1>
+                                                  <S1: pc=808 npc=8A0 regs=x memop2>
+                                                  <S2: pc=8A0 npc=8A4 regs=x memop5>
+                                                  <S3:                             >
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Decode    DecodeIStram()  sc_decode()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute  RunAt(0x8A4)     sc_force_pc(0x8A4)      MemPages[     mem0               ]
+                          sc_save_state()         <S0: pc=804 npc=808 regs=x memop1>
+                                                  <S1: pc=808 npc=8A0 regs=x memop2>
+                                                  <S2: pc=8A0 npc=8A4 regs=x memop5>
+                                                  <S3: pc=8A4 npc=8A8 regs=x memop6>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Execute  RunAt(0x8A8)     sc_force_pc(0x8A8)      MemPages[     mem0     mem1      ]
+                          sc_save_state()         <                       ^--memop1>
+                                                  <S0: pc=808 npc=8A0 regs=x memop2>
+                                                  <S1: pc=8A0 npc=8A4 regs=x memop5>
+                                                  <S2: pc=8A4 npc=8A8 regs=x memop6>
+                                                  <S3: pc=8A8 npc=8AC regs=x memop7>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Execute ...
 ```
