@@ -97,7 +97,7 @@ static int sim_recv(char *rx_buf)
 		rx_size = recv(fd, rx_buf + rx_offset, cnt_size - rx_offset, 0);
 #ifdef SC_DEBUG
 		printf("<rx %4d at %4d:", rx_size, rx_offset);
-		for (i = 0; i < cnt_size; i++) {
+		for (int i = 0; i < cnt_size; i++) {
 			printf(" %02x", (unsigned char)rx_buf[i]);
 		}
 		printf(">\n");
@@ -129,7 +129,7 @@ static int sim_recv(char *rx_buf)
 		rx_size = recv(fd, rx_buf + rx_offset, cnt_size + data_size - rx_offset, 0);
 #ifdef SC_DEBUG
 		printf("<rx %4d at %4d:", rx_size, rx_offset);
-		for (i = 0; i < cnt_size+rx_offset+rx_size; i++) {
+		for (int i = 0; i < cnt_size+rx_offset+rx_size; i++) {
 			printf(" %02x", (unsigned char)rx_buf[i]);
 		}
 		printf(">\n");
@@ -316,7 +316,7 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	}
 #ifdef SC_DEBUG
 	printf("<tx %4d:", tx_size);
-	for (i = 0; i < tx_size; i++) {
+	for (int i = 0; i < tx_size; i++) {
 		printf(" %02x", (unsigned char)tx_buf[i]);
 	}
 	printf(">\n");
