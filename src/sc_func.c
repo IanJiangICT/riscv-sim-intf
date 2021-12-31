@@ -14,7 +14,7 @@
 
 #define SOCK_BUF_SIZE 4096
 
-static int sock_fd;
+static struct sim_context sim = {0};
 
 int sc_init(char *host, unsigned int port)
 {
@@ -49,7 +49,7 @@ int sc_init(char *host, unsigned int port)
 	}
 
 	printf("SC: Connected to %s %d\n", host, port);
-	sock_fd = fd;
+	sim.sock_fd = fd;
 	return fd;
 }
 
@@ -91,7 +91,7 @@ static int sim_recv(char *rx_buf)
 	const int cnt_size = sizeof(uint16_t);
 	int data_size;
 
-	fd = sock_fd;
+	fd = sim.sock_fd;
 	rx_offset = 0;
 	while (1) {
 		rx_size = recv(fd, rx_buf + rx_offset, cnt_size - rx_offset, 0);
@@ -186,7 +186,7 @@ int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long l
 	if (pc == NULL) return -1;
 	if (insn == NULL) return -1;
 
-	fd = sock_fd;
+	fd = sim.sock_fd;
 
 	tx_buf[0] = 'R';
 	tx_size = 1;
@@ -235,7 +235,7 @@ int sc_force_pc(unsigned long long pc)
 	int size_size = sizeof(uint16_t);
 	unsigned long long actual_pc;
 
-	fd = sock_fd;
+	fd = sim.sock_fd;
 
 	tx_buf[0] = 'F';
 	tx_size = 1;
@@ -289,7 +289,7 @@ int sc_decode(int code_len, char *code_data, int insn_max, insn_info_t *insn_lis
 	if (insn_max <= 0) return -1;
 	if (insn_list == NULL) return -1;
 
-	fd = sock_fd;
+	fd = sim.sock_fd;
 
 	tx_buf[0] = 'D';
 	tx_size = 1;
@@ -450,16 +450,6 @@ unsigned char insn_match_type(const char *disasm)
 	return ITC;
 }
 
-struct __attribute__((packed)) rsp_save_state {
-	uint16_t size;
-	uint16_t xpr_size;
-	uint16_t fpr_size;
-	uint16_t log_l_size;
-	uint16_t log_s_size;
-	uint8_t other_data[0];
-};
-
-
 static void inline _print_u64(void *data, int size)
 {
 	if (data == NULL) return;
@@ -524,7 +514,7 @@ int sc_save_state(void)
 	int size_size = sizeof(uint16_t);
 	struct rsp_save_state *rsp = (struct rsp_save_state *)rx_buf;
 
-	fd = sock_fd;
+	fd = sim.sock_fd;
 
 	tx_buf[0] = 'S';
 	tx_size = 1;
