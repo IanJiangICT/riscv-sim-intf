@@ -90,6 +90,8 @@ struct mem_page {
 };
 
 struct sim_context {
+	uint64_t pc;
+	uint64_t npc;
 	struct proc_state states[STATE_CAP];
 	int state_h, state_t;
 	struct mem_page pages[MEM_PAGE_SIZE];

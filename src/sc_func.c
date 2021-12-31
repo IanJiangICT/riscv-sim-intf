@@ -218,7 +218,9 @@ resend:
 	memcpy(pc, rx_buf + rx_offset, sizeof(*pc));
 	rx_offset += sizeof(uint64_t);
 	memcpy(insn, rx_buf + rx_offset, sizeof(*insn));
-	
+	sim.pc = *pc;
+	sim.npc = *npc;
+
 	return 1;
 }
 
@@ -266,6 +268,10 @@ int sc_force_pc(unsigned long long pc)
 		printf("SC Error: Failed to force pc. Req 0x%llx Got 0x%llx\n", pc, actual_pc);
 		return -1;
 	}
+	sim.pc = pc;
+	rx_offset = size_size + sizeof(uint64_t);
+	memcpy(&sim.npc, rx_buf + rx_offset, sizeof(actual_pc));
+
 	return 1;
 }
 
