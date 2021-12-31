@@ -12,6 +12,7 @@ tests = sc_test0
 tests += sc_test1
 tests += sc_test2
 tests += sc_test3
+tests += sc_test4
 
 default: all
 
@@ -31,3 +32,6 @@ sc_test2: sc_test2.c $(src) $(header)
 
 sc_test3: sc_test3.c $(src) $(header)
 	$(CC) $(CFLAGS) -fno-stack-protector $(src) sc_test3.c -o $@
+
+sc_test4: sc_test4.c $(src) $(header)
+	$(CC) $(CFLAGS) $(src) sc_test4.c -o $@
