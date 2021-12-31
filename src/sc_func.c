@@ -449,3 +449,108 @@ unsigned char insn_match_type(const char *disasm)
 	}
 	return ITC;
 }
+
+struct __attribute__((packed)) rsp_save_state {
+	uint16_t size;
+	uint16_t xpr_size;
+	uint16_t fpr_size;
+	uint16_t log_l_size;
+	uint16_t log_s_size;
+	uint8_t other_data[0];
+};
+
+
+static void inline _print_u64(void *data, int size)
+{
+	if (data == NULL) return;
+	if (size <= 0) return;
+	for (int i = 0; i < size/sizeof(uint64_t); i++) {
+		printf(" %016lx", *((uint64_t *)data + i));
+	}
+	printf("\n");
+}
+
+static void print_state(struct rsp_save_state *rsp)
+{
+	int i;
+	uint64_t val;
+	uint8_t *base;
+
+	if (rsp == NULL) return;
+	printf("State: %d + %d + %d + %d\n", rsp->xpr_size, rsp->fpr_size,
+		    rsp->log_l_size, rsp->log_s_size);
+
+	printf("  XPR:");
+	base = rsp->other_data;
+	for (i = 0; i < rsp->xpr_size/sizeof(uint64_t); i++) {
+		val = ((uint64_t *)base)[i];
+		if (val == 0) continue;
+		printf(" %2d %016lx", i, val);
+	}
+	printf("\n");
+
+	printf("  FPR:");
+	base += rsp->xpr_size;
+	for (i = 0; i < rsp->fpr_size/sizeof(uint64_t); i++) {
+		val = ((uint64_t *)base)[i];
+		if (val == 0) continue;
+		printf(" %2d %016lx", i, val);
+	}
+	printf("\n");
+
+	printf("  Load:");
+	base += rsp->fpr_size;
+	_print_u64(base, rsp->log_l_size);
+	printf("\n");
+
+	printf("  Store:");
+	base += rsp->log_l_size;
+	_print_u64(base, rsp->log_s_size);
+	printf("\n");
+
+	return;
+}
+
+int sc_save_state(void)
+{
+	int fd;
+	int tx_size;
+	int rx_size;
+	//int rx_offset;
+	char tx_buf[SOCK_BUF_SIZE];
+	char rx_buf[SOCK_BUF_SIZE];
+	int ret;
+	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
+	int size_size = sizeof(uint16_t);
+	struct rsp_save_state *rsp = (struct rsp_save_state *)rx_buf;
+
+	fd = sock_fd;
+
+	tx_buf[0] = 'S';
+	tx_size = 1;
+	tx_size += sizeof(*arg_size);
+	*arg_size = 0;
+
+	ret = send(fd, tx_buf, tx_size, 0);
+	if (ret != tx_size) {
+		printf("SC Error: Failed to send\n");
+		return -1;
+	}
+
+	rx_size = sim_recv(rx_buf);
+	if (rx_size < size_size) {
+		return -1;
+	}
+	if (rx_size  != (sizeof(*rsp) + rsp->xpr_size + rsp->fpr_size + rsp->log_l_size + rsp->log_s_size)) {
+		printf("SC Error: Invalid data size in response. rx_size = %d\n", rx_size);
+		return -1;
+	}
+
+	print_state(rsp);
+	return 1;
+}
+
+int sc_recover_state(unsigned long long pc)
+{
+	return -1;
+}
