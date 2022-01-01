@@ -95,7 +95,7 @@ static int sim_recv(char *rx_buf)
 	rx_offset = 0;
 	while (1) {
 		rx_size = recv(fd, rx_buf + rx_offset, cnt_size - rx_offset, 0);
-#ifdef SC_DEBUG
+#if 0 //def SC_DEBUG
 		printf("<rx %4d at %4d:", rx_size, rx_offset);
 		for (int i = 0; i < cnt_size; i++) {
 			printf(" %02x", (unsigned char)rx_buf[i]);
@@ -127,7 +127,7 @@ static int sim_recv(char *rx_buf)
 	rx_offset = cnt_size;
 	while (1) {
 		rx_size = recv(fd, rx_buf + rx_offset, cnt_size + data_size - rx_offset, 0);
-#ifdef SC_DEBUG
+#if 0 //def SC_DEBUG
 		printf("<rx %4d at %4d:", rx_size, rx_offset);
 		for (int i = 0; i < cnt_size+rx_offset+rx_size; i++) {
 			printf(" %02x", (unsigned char)rx_buf[i]);
@@ -466,19 +466,20 @@ static void inline _print_u64(void *data, int size)
 	printf("\n");
 }
 
-static void print_state(struct rsp_save_state *rsp)
+#ifdef SC_DEBUG
+static void state_print(int sn)
 {
 	int i;
-	uint64_t val;
 	uint8_t *base;
+	struct proc_state *s;
+	if (sn < 0 || sn >= STATE_CAP) return;
 
-	if (rsp == NULL) return;
-	printf("State: %d + %d + %d + %d\n", rsp->xpr_size, rsp->fpr_size,
-		    rsp->log_l_size, rsp->log_s_size);
-
+	printf("State[%d]\n", sn);
+	s = sim.states + sn;
 	printf("  XPR:");
-	base = rsp->other_data;
-	for (i = 0; i < rsp->xpr_size/sizeof(uint64_t); i++) {
+	base = s->xpr_data;
+	for (i = 0; i < XPR_SIZE/sizeof(uint64_t); i++) {
+		uint64_t val;
 		val = ((uint64_t *)base)[i];
 		if (val == 0) continue;
 		printf(" %2d %016lx", i, val);
@@ -486,23 +487,66 @@ static void print_state(struct rsp_save_state *rsp)
 	printf("\n");
 
 	printf("  FPR:");
-	base += rsp->xpr_size;
-	for (i = 0; i < rsp->fpr_size/sizeof(uint64_t); i++) {
-		val = ((uint64_t *)base)[i];
-		if (val == 0) continue;
-		printf(" %2d %016lx", i, val);
+	base = s->fpr_data;
+	for (i = 0; i < FPR_SIZE/sizeof(uint64_t); i += 2) {
+		uint64_t val0, val1;
+		val0 = ((uint64_t *)base)[i];
+		val1 = ((uint64_t *)base)[i + 1];
+		if (val0 == 0 && val1 == 0) continue;
+		printf(" %2d %016lx %016lx", i, val0, val1);
 	}
 	printf("\n");
 
-	printf("  Load:");
-	base += rsp->fpr_size;
-	_print_u64(base, rsp->log_l_size);
+	printf("  Mem:");
+	base = (uint8_t *)s->mup_data;
+	_print_u64(base, s->mup_cnt * sizeof(struct mem_update));
 	printf("\n");
 
-	printf("  Store:");
-	base += rsp->log_l_size;
-	_print_u64(base, rsp->log_s_size);
-	printf("\n");
+	return;
+}
+#endif
+
+static void state_push(struct rsp_save_state *rsp)
+{
+	int h,t;
+	struct proc_state *s = NULL;
+	uint8_t *base;
+
+	if (rsp == NULL) return;
+
+#ifdef SC_DEBUG
+	printf("State: %d + %d + %d + %d\n", rsp->xpr_size, rsp->fpr_size,
+		    rsp->log_l_size, rsp->log_s_size);
+#endif
+
+	h = sim.state_h;
+	t = sim.state_t;
+
+	/* Save the new state */
+	t = (t == (STATE_CAP - 1)) ? 0 : t + 1;
+	h = (h == (STATE_CAP - 1)) ? 0 : h + 1;
+	s = sim.states + h;
+	s->pc = sim.pc;
+	s->npc = sim.npc;
+	base = rsp->other_data;
+	memcpy(s->xpr_data, base, XPR_SIZE);
+	base += rsp->xpr_size;
+	memcpy(s->fpr_data, base, FPR_SIZE);
+	base += rsp->fpr_size;
+	/* Build memory updates based on previous memory state and new memory logs */
+	if (rsp->log_s_size > 0) { // TODO
+		s->mup_cnt = 0;
+	}
+	/* Sync new memory logs into memory state */
+	if (rsp->log_l_size > 0 || rsp->log_s_size > 0) { // TODO
+		;
+	}
+
+#ifdef SC_DEBUG
+	state_print(h);
+#endif
+	sim.state_h = h;
+	sim.state_t = t;
 
 	return;
 }
@@ -542,7 +586,7 @@ int sc_save_state(void)
 		return -1;
 	}
 
-	print_state(rsp);
+	state_push(rsp);
 	return 1;
 }
 
