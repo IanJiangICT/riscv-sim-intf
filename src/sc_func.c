@@ -497,20 +497,96 @@ static void state_print(int sn)
 	}
 	printf("\n");
 
-	printf("  Mem:");
+	printf("  Mem:\n");
 	base = (uint8_t *)s->mup_data;
-	_print_u64(base, s->mup_cnt * sizeof(struct mem_update));
-	printf("\n");
+	for (i = 0; i < s->mup_cnt; i++) {
+		printf("[%d] %d %016lx : %016lx -> %016lx\n", i,
+			(int)s->mup_data[i].size,
+			s->mup_data[i].addr,
+			s->mup_data[i].val_old,
+			s->mup_data[i].val_new);
+	}
 
 	return;
 }
 #endif
+
+static int mem_get(uint64_t addr, uint8_t size, uint64_t *val)
+{
+	int i;
+	int j;
+	uint64_t base = addr >> MEM_BLOCK_SHIFT;
+	uint64_t offset = addr & (MEM_BLOCK_SIZE - 1);
+
+#ifdef SC_DEBUG
+	printf("SC: Get memory for %016lx %d\n", addr, (int)size);
+#endif
+	for (i = 0; i < MEM_BLOCK_CNT; i++) {
+		if (sim.mems[i].valid == 0) continue;
+		if (sim.mems[i].base != base) continue;
+		*val = 0;
+		for (j = 0; j < size; j++) {
+			if (offset + j >= MEM_BLOCK_SIZE) break;
+			*val <<= 8;
+			*val |= sim.mems[i].data[offset + j];
+		}
+		return j;
+	}
+	return 0;
+}
+
+static int mem_put(uint64_t addr, uint8_t size, uint64_t val)
+{
+	int i;
+	int j;
+	uint64_t base = addr >> MEM_BLOCK_SHIFT;
+	uint64_t offset = addr & (MEM_BLOCK_SIZE - 1);
+
+#ifdef SC_DEBUG
+	printf("SC: Put memory for %016lx %d = %016lx\n", addr, (int)size, val);
+#endif
+	/* Search in existing blocks */
+	for (i = 0; i < MEM_BLOCK_CNT; i++) {
+		if (sim.mems[i].valid == 0) continue;
+		if (sim.mems[i].base == base) break;
+	}
+
+	/* Create new block if necessary */
+	if (i >= MEM_BLOCK_CNT) {
+		for (i = 0; i < MEM_BLOCK_CNT; i++) {
+			if (sim.mems[i].valid != 0) continue;
+#ifdef SC_DEBUG
+			printf("SC: New memory block %d for base %016lx\n", i, base << MEM_BLOCK_SHIFT);
+#endif
+			sim.mems[i].base = base;
+			sim.mems[i].valid = 1;
+			break;
+		}
+	}
+	if (i >= MEM_BLOCK_CNT)
+		return 0;
+
+	/* Save new vale */
+	for (j = 0; j < size; j++) {
+		if (offset + j >= MEM_BLOCK_SIZE) break;
+		sim.mems[i].data[offset + j] = val & 0xFF;
+		val >>= 8;
+	}
+	return j;
+}
 
 static void state_push(struct rsp_save_state *rsp)
 {
 	int h,t;
 	struct proc_state *s = NULL;
 	uint8_t *base;
+	mem_log_t *mlog;
+	uint64_t addr;
+	uint64_t size;
+	uint64_t val_old;
+	uint64_t val_new;
+	int i;
+	int ret;
 
 	if (rsp == NULL) return;
 
@@ -534,12 +610,47 @@ static void state_push(struct rsp_save_state *rsp)
 	memcpy(s->fpr_data, base, FPR_SIZE);
 	base += rsp->fpr_size;
 	/* Build memory updates based on previous memory state and new memory logs */
-	if (rsp->log_s_size > 0) { // TODO
-		s->mup_cnt = 0;
+	mlog = (mem_log_t *)(base + rsp->log_l_size);
+	s->mup_cnt = 0;
+	for (i = 0; i < (rsp->log_s_size / sizeof(mem_log_t)); i++) {
+		addr = mlog[i].addr;
+		val_new = mlog[i].val;
+		size = mlog[i].size;
+#ifdef SC_DEBUG
+		printf("SC: Check memory store log %d: %016lx %d %016lx\n", i, addr, (int)size, val_new);
+#endif
+		ret = mem_get(addr, (uint8_t)size, &val_old);
+		if (ret <= 0) continue;
+		if (ret != size) {
+			printf("SC Error: Not complete data for memory store log %d\n", i);
+			continue;
+		}
+		if (val_new == val_old) continue;
+		if (s->mup_cnt >= MEM_UPDATE_CAP - 1) {
+			printf("SC Error: No free update space for memory store log %d\n", i);
+			continue;
+		}
+#ifdef SC_DEBUG
+		printf("SC: Save memory store log %d to memory update %d\n", i, s->mup_cnt);
+#endif
+		s->mup_data[s->mup_cnt].addr = addr;
+		s->mup_data[s->mup_cnt].val_new = val_new;
+		s->mup_data[s->mup_cnt].val_old = val_old;
+		s->mup_data[s->mup_cnt].size = size;
+		s->mup_cnt += 1;
 	}
-	/* Sync new memory logs into memory state */
-	if (rsp->log_l_size > 0 || rsp->log_s_size > 0) { // TODO
-		;
+
+	/* Sync new memory value */
+	mlog = (mem_log_t *)(base);
+	for (i = 0; i < ((rsp->log_l_size + rsp->log_s_size) / sizeof(mem_log_t)); i++) {
+		addr = mlog[i].addr;
+		val_new = mlog[i].val;
+		size = mlog[i].size;
+		ret = mem_put(addr, (uint8_t)size, val_new);
+		if (ret != size) {
+			printf("SC Error: Failed to save value for memory log %d\n", i);
+			continue;
+		}
 	}
 
 #ifdef SC_DEBUG
