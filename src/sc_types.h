@@ -52,10 +52,10 @@ typedef struct __attribute__((packed)) {
 	uint8_t disasm[INSN_DISASM_MAX_LEN];
 } insn_info_t;
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed)){
 	uint64_t addr;
 	uint64_t val;
-	uint8_t size;
+	uint64_t size;
 } mem_log_t;
 
 struct __attribute__((packed)) rsp_save_state {
@@ -69,22 +69,30 @@ struct __attribute__((packed)) rsp_save_state {
 
 #define XPR_SIZE (sizeof(uint64_t) * 32)
 #define FPR_SIZE (sizeof(uint64_t) * 64)
-#define MEM_LOG_CAP 8
-#define MEM_PAGE_SIZE 4096
-#define MEM_PAGE_CNT 8
+#define MEM_UPDATE_CAP 8
+#define MEM_BLOCK_SHIFT 12
+#define MEM_BLOCK_SIZE (1<<MEM_BLOCK_SHIFT)
+#define MEM_BLOCK_CNT 8
 #define STATE_CAP 4
+
+struct mem_update {
+	uint64_t addr;
+	uint64_t val_old;
+	uint64_t val_new;
+	uint64_t size;
+};
 
 struct proc_state {
 	uint64_t pc;
 	uint64_t npc;
 	uint8_t xpr_data[XPR_SIZE];
-	uint8_t fpr_data[XPR_SIZE];
-	mem_log_t mem_log[MEM_LOG_CAP];
-	uint8_t valid;
+	uint8_t fpr_data[FPR_SIZE];
+	struct mem_update mup_data[MEM_UPDATE_CAP];
+	uint8_t mup_cnt;
 };
 
-struct mem_page {
-	uint8_t data[MEM_PAGE_SIZE];
+struct mem_block {
+	uint8_t data[MEM_BLOCK_SIZE];
 	uint64_t base;
 	uint8_t valid;
 };
@@ -94,7 +102,7 @@ struct sim_context {
 	uint64_t npc;
 	struct proc_state states[STATE_CAP];
 	int state_h, state_t;
-	struct mem_page pages[MEM_PAGE_SIZE];
+	struct mem_block mems[MEM_BLOCK_CNT];
 	int sock_fd;
 };
 
