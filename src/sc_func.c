@@ -476,6 +476,7 @@ static void state_print(int sn)
 
 	printf("State[%d]\n", sn);
 	s = sim.states + sn;
+	printf("  PC %016lx NPC %016lx\n", s->pc, s->npc);
 	printf("  XPR:");
 	base = s->xpr_data;
 	for (i = 0; i < XPR_SIZE/sizeof(uint64_t); i++) {
@@ -497,10 +498,9 @@ static void state_print(int sn)
 	}
 	printf("\n");
 
-	printf("  Mem:\n");
 	base = (uint8_t *)s->mup_data;
 	for (i = 0; i < s->mup_cnt; i++) {
-		printf("[%d] %d %016lx : %016lx -> %016lx\n", i,
+		printf("  Mem[%d] %d %016lx : %016lx -> %016lx\n", i,
 			(int)s->mup_data[i].size,
 			s->mup_data[i].addr,
 			s->mup_data[i].val_old,
