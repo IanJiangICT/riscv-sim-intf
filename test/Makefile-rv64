@@ -1,0 +1,38 @@
+GNU_TOOL = riscv64-linux-gnu-
+CC = $(GNU_TOOL)gcc
+LD = $(GNU_TOOL)ld
+DUMP = $(GNU_TOOL)objdump
+CFLAGS += -nostartfiles
+
+CFLAGS += -mcmodel=medany -fvisibility=hidden -nostdlib
+CFLAGS += -march=rv64g
+CFLAGS += -mabi=lp64d
+CFLAGS += -O0
+
+CFLAGS += -c
+CFLAGS += -static
+CFLAGS += -Wall
+
+LDFLAGS = -nostdlib
+
+elfs = mem
+
+a_objs = $(elfs:elf=ao)
+c_objs = 
+
+objs = $(a_objs) $(c_objs)
+
+default: all
+
+all: $(elfs)
+
+clean:
+	rm -rf $(ld_mc)
+	rm -rf $(a_objs)
+
+%.ao : %.S
+	$(CC) $(CFLAGS) -D __ASM__ $< -o $@
+
+mem : mem.ao
+	$(LD) $(LDFLAGS) -Trv64.lds -o $@ mem.ao
+	$(DUMP) -d $@ > $@-dump.S
