@@ -4,6 +4,9 @@ import "DPI-C" function int sc_init_sim(input string elf, input int port);
 import "DPI-C" function int sc_run_next(output longint npc, output longint pc, output longint insn);
 import "DPI-C" function int sc_decode(input int code_len, input byte code_data[DEC_INSN_STREAM_CAP-1:0],
                                       input int insn_max, output byte insn_list[DEC_INSN_LIST_SIZE-1:0]);
+import "DPI-C" function int sc_force_pc(input longint new_pc);
+import "DPI-C" function int sc_save_state();
+import "DPI-C" function int sc_recover_state(input longint pc);
 
 `define SIM_PORT 12300
 
@@ -136,4 +139,20 @@ class SimProxy;
 		return cnt;
 	endfunction
 
+	function int RunAt(input longint pc);
+		int ret;
+
+		ret = sc_force_pc(pc);
+		if (ret < 0) begin
+			$display("Error: Failed sc_force_pc at %x", pc);
+			return -1;
+		end
+		ret = sc_save_state();
+		if (ret < 0) begin
+			$display("Error: Failed sc_save_state at %x", pc);
+			return -1;
+		end
+
+		return 1;
+	endfunction
 endclass
