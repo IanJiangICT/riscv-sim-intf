@@ -269,7 +269,7 @@ int sc_force_pc(unsigned long long pc)
 		return -1;
 	}
 	sim.pc = pc;
-	rx_offset = size_size + sizeof(uint64_t);
+	rx_offset = size_size;
 	memcpy(&sim.npc, rx_buf + rx_offset, sizeof(actual_pc));
 
 	return 1;
