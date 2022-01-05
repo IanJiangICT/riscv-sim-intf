@@ -73,7 +73,7 @@ struct __attribute__((packed)) rsp_save_state {
 #define MEM_BLOCK_SHIFT 12
 #define MEM_BLOCK_SIZE (1<<MEM_BLOCK_SHIFT)
 #define MEM_BLOCK_CNT 8
-#define STATE_CAP 4
+#define STATE_CAP 8
 
 struct mem_update {
 	uint64_t addr;

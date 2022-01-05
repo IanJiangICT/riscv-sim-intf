@@ -5,8 +5,10 @@
 #define SKIP_INSN_CNT 32
 #define PC_OFFSET_V0_END	0xa8
 #define PC_OFFSET_JUMP_V1	0xac
+#define PC_OFFSET_JUMP_V1_FORCE	(PC_OFFSET_JUMP_V1 + 4)
 #define PC_OFFSET_JUMP_CHECK	0xb8
 #define PC_OFFSET_V1_END	0xcc
+#define PC_OFFSET_CHECK_END	0xd8
 
 /* Test sc_save_state() and sc_recover_state() */
 
@@ -38,17 +40,35 @@ int main(int argc, char **argv)
 		if (ret < 0) { printf("SC Test: Error. sc_run_next ret = %d\n", ret); return -1; }
 	}
 
-	printf("SC Test: Go throuth value 0 and 1\n");
+	printf("SC Test: Go through value 0 and 1\n");
+	do {
+		ret = sc_run_next(&npc, &pc, &insn);
+		if (ret < 0) { printf("SC Test: Error. sc_run_next ret = %d\n", ret); return -1; }
+		printf("SC Test: Save state at PC 0x%llx NPC 0x%llx\n", pc, npc);
+		ret = sc_save_state();
+		if (ret < 0) { printf("SC Test: Error. sc_save_state ret = %d\n", ret); return -1; }
+	} while (pc < (ELF_ENTYR_PC + PC_OFFSET_V1_END));
+
+	pc = (unsigned long long)(ELF_ENTYR_PC + PC_OFFSET_JUMP_V1);
+	printf("SC Test: Recover (go back) to jump after value 0. PC = 0x%llx\n", pc);
+	ret = sc_recover_state(pc);
+	if (ret < 0) { printf("SC Test: Error. sc_recover_state ret = %d\n", ret); return -1; }
+
+	pc = (unsigned long long)(ELF_ENTYR_PC + PC_OFFSET_JUMP_V1_FORCE);
+	printf("SC Test: Force to not jump (NOT modify value 1). PC = 0x%llx\n", pc);
+	ret = sc_force_pc(pc);
+	if (ret < 0) { printf("SC Test: Error. sc_force_pc ret = %d\n", ret); return -1; }
+	printf("SC Test: Save state at PC 0x%llx\n", pc);
+	ret = sc_save_state();
+	if (ret < 0) { printf("SC Test: Error. sc_save_state ret = %d\n", ret); return -1; }
+
+	printf("SC Test: Go through checking\n");
 	do {
 		ret = sc_run_next(&npc, &pc, &insn);
 		printf("SC Test: Save state at PC 0x%llx NPC 0x%llx\n", pc, npc);
 		if (ret < 0) { printf("SC Test: Error. sc_run_next ret = %d\n", ret); return -1; }
 		ret = sc_save_state();
 		if (ret < 0) { printf("SC Test: Error. sc_save_state ret = %d\n", ret); return -1; }
-	} while (pc < (ELF_ENTYR_PC + PC_OFFSET_V1_END));
-
-	/* To be continued */
-	printf("SC Test: Go back to end of value 0\n");
-	printf("SC Test: Force PC to check (NOT modify value 1)\n");
+	} while (pc < (ELF_ENTYR_PC + PC_OFFSET_CHECK_END));
 	return 0;
 }
