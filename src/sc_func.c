@@ -664,6 +664,37 @@ static void state_push(struct rsp_save_state *rsp)
 	return;
 }
 
+/* Find state with PC from head to tail */
+static int state_find(uint64_t pc)
+{
+	int h = sim.state_h;
+	int t = sim.state_t;
+
+	if (h == t) return -1;
+	while (1) {
+		h = (h == 0) ? (STATE_CAP - 1) : h - 1;
+		if ((t == 0 && h == (STATE_CAP - 1)) || (t > 0 && h == (t - 1)))
+			return -1;
+		if (sim.states[h].pc == pc)
+			return h;
+	};
+}
+
+static int state_pop(void)
+{
+	int h = sim.state_h;
+	int t = sim.state_t;
+
+	if (h == t) return -1;
+	while (1) {
+		h = (h == 0) ? (STATE_CAP - 1) : h - 1;
+		if ((t == 0 && h == (STATE_CAP - 1)) || (t > 0 && h == (t - 1)))
+			return -1;
+		sim.state_h = h;
+		return h;
+	};
+}
+
 int sc_save_state(void)
 {
 	int fd;
@@ -705,5 +736,81 @@ int sc_save_state(void)
 
 int sc_recover_state(unsigned long long pc)
 {
-	return -1;
+	int fd;
+	int tx_size;
+	int rx_size;
+	char tx_buf[SOCK_BUF_SIZE];
+	char rx_buf[SOCK_BUF_SIZE];
+	int ret;
+	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
+	int size_size = sizeof(uint16_t);
+	mem_log_t *mlog;
+	int s;
+	int i;
+	int j;
+
+	fd = sim.sock_fd;
+
+	/* Find the state recover to */
+	s = state_find(pc);
+	if (s < 0) {
+		printf("SC Error: Failed to find state with PC = %016llx\n", pc);
+		return -1;
+	}
+#ifdef SC_DEBUG
+	printf("SC: Found state[%d] with PC = %016llx\n", s, pc);
+#endif
+
+	/* Build request with register data to recover */
+	tx_buf[0] = 'S';
+	tx_size = 1;
+	tx_size += sizeof(*arg_size);
+	memcpy(tx_buf + tx_size, sim.states[s].xpr_data, XPR_SIZE);
+	tx_size += XPR_SIZE;
+	memcpy(tx_buf + tx_size, sim.states[s].fpr_data, FPR_SIZE);
+	tx_size += FPR_SIZE;
+
+	/* Build memory recover list and append to request */
+	mlog = (mem_log_t *)(tx_buf + tx_size);
+	do {
+		i = state_pop();
+		if (i < 0) {
+			printf("SC Error: Failed to pop state\n");
+			return -1;
+		}
+		if (i == s) break;
+		if (sim.states[i].mup_cnt <= 0) continue;
+		for (j = 0; j < sim.states[i].mup_cnt; j++) {
+#ifdef SC_DEBUG
+			printf("SC: Build in memory update [%d][%d]\n", i, j);
+#endif
+			mlog->addr = sim.states[i].mup_data[j].addr;
+			mlog->size = sim.states[i].mup_data[j].size;
+			mlog->val = sim.states[i].mup_data[j].val_old;
+			tx_size += sizeof(*mlog);
+			mlog++;
+		}
+	} while (1);
+
+	*arg_size = tx_size - (1 + sizeof(*arg_size));
+
+	ret = send(fd, tx_buf, tx_size, 0);
+	if (ret != tx_size) {
+		printf("SC Error: Failed to send\n");
+		return -1;
+	}
+#ifdef SC_DEBUG
+	printf("<tx %4d:", tx_size);
+	for (int i = 0; i < tx_size; i++) {
+		printf(" %02x", (unsigned char)tx_buf[i]);
+	}
+	printf(">\n");
+#endif
+
+	rx_size = sim_recv(rx_buf);
+	if (rx_size != size_size) {
+		return -1;
+	}
+
+	return 0;
 }
