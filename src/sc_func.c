@@ -599,8 +599,10 @@ static void state_push(struct rsp_save_state *rsp)
 	t = sim.state_t;
 
 	/* Save the new state */
-	t = (t == (STATE_CAP - 1)) ? 0 : t + 1;
-	h = (h == (STATE_CAP - 1)) ? 0 : h + 1;
+	if (h != t) // Advance head index (next free)
+		h = (h == (STATE_CAP - 1)) ? 0 : h + 1;
+	if (h == t) // Advance tail index (last in-use)
+		t = (t == (STATE_CAP - 1)) ? 0 : t + 1;
 	s = sim.states + h;
 	s->pc = sim.pc;
 	s->npc = sim.npc;
