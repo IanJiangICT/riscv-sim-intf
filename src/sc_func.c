@@ -771,6 +771,7 @@ int sc_recover_state(unsigned long long pc)
 	tx_size += FPR_SIZE;
 
 	/* Build memory recover list and append to request */
+	/* And recover local memory blocks */
 	mlog = (mem_log_t *)(tx_buf + tx_size);
 	do {
 		i = state_pop();
@@ -782,11 +783,16 @@ int sc_recover_state(unsigned long long pc)
 		if (sim.states[i].mup_cnt <= 0) continue;
 		for (j = 0; j < sim.states[i].mup_cnt; j++) {
 #ifdef SC_DEBUG
-			printf("SC: Build in memory update [%d][%d]\n", i, j);
+			printf("SC: Recover with memory update [%d][%d]\n", i, j);
 #endif
 			mlog->addr = sim.states[i].mup_data[j].addr;
 			mlog->size = sim.states[i].mup_data[j].size;
 			mlog->val = sim.states[i].mup_data[j].val_old;
+			ret = mem_put(mlog->addr, (uint8_t)mlog->size, mlog->val);
+			if (ret != (int)mlog->size) {
+				printf("SC Error: Failed to Recover memory block with update [%d][%d]\n", i, j);
+				return -1;
+			}
 			tx_size += sizeof(*mlog);
 			mlog++;
 		}
