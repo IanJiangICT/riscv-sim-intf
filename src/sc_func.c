@@ -575,7 +575,7 @@ static int mem_put(uint64_t addr, uint8_t size, uint64_t val)
 	return j;
 }
 
-static void state_push(struct rsp_save_state *rsp)
+static int state_push(struct rsp_save_state *rsp)
 {
 	int h,t;
 	struct proc_state *s = NULL;
@@ -588,7 +588,7 @@ static void state_push(struct rsp_save_state *rsp)
 	int i;
 	int ret;
 
-	if (rsp == NULL) return;
+	if (rsp == NULL) return -1;
 
 #ifdef SC_DEBUG
 	printf("State: %d + %d + %d + %d\n", rsp->xpr_size, rsp->fpr_size,
@@ -625,12 +625,12 @@ static void state_push(struct rsp_save_state *rsp)
 		if (ret <= 0) continue;
 		if (ret != size) {
 			printf("SC Error: Not complete data for memory store log %d\n", i);
-			continue;
+			return -1;
 		}
 		if (val_new == val_old) continue;
 		if (s->mup_cnt >= MEM_UPDATE_CAP - 1) {
 			printf("SC Error: No free update space for memory store log %d\n", i);
-			continue;
+			return -1;
 		}
 #ifdef SC_DEBUG
 		printf("SC: Save memory store log %d to memory update %d\n", i, s->mup_cnt);
@@ -651,7 +651,7 @@ static void state_push(struct rsp_save_state *rsp)
 		ret = mem_put(addr, (uint8_t)size, val_new);
 		if (ret != size) {
 			printf("SC Error: Failed to save value for memory log %d\n", i);
-			continue;
+			return -1;
 		}
 	}
 
@@ -661,7 +661,7 @@ static void state_push(struct rsp_save_state *rsp)
 	sim.state_h = h;
 	sim.state_t = t;
 
-	return;
+	return 0;
 }
 
 /* Find state with PC from head to tail */
@@ -730,7 +730,11 @@ int sc_save_state(void)
 		return -1;
 	}
 
-	state_push(rsp);
+	ret = state_push(rsp);
+	if (ret != 0) {
+		printf("SC Error: Failed save new state\n");
+		return -1;
+	}
 	return 1;
 }
 
