@@ -155,4 +155,16 @@ class SimProxy;
 
 		return 1;
 	endfunction
+
+	function int RevertTo(input longint pc);
+		int ret;
+
+		ret = sc_recover_state(pc);
+		if (ret < 0) begin
+			$display("Error: Failed sc_recover_state at %x", pc);
+			return -1;
+		end
+		return 1;
+
+	endfunction
 endclass
