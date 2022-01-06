@@ -139,6 +139,32 @@ class SimProxy;
 		return cnt;
 	endfunction
 
+	function int RunUntil(input longint pc);
+		longint npc;
+		longint cpc;
+		longint ci;
+		int cnt;
+		int ret;
+
+		cnt = 0;
+		do begin
+			cnt = cnt + 1;
+			ret = sc_run_next(npc, cpc, ci);
+			if (ret < 0) begin
+				$display("Error: Failed sc_run_next %d", cnt);
+				return -1;
+			end
+		end while (cpc != pc);
+
+		ret = sc_save_state();
+		if (ret < 0) begin
+			$display("Error: Failed sc_save_state at %x", pc);
+			return -1;
+		end
+
+		return 1;
+	endfunction
+
 	function int RunAt(input longint pc);
 		int ret;
 
