@@ -1,6 +1,7 @@
 package sc_cfg;
 
 	// For decoder
+	parameter DEC_DISCARD_ISTREAM_REMNANT = 1;
 	parameter DEC_INSN_STREAM_BITS= 272;
 	parameter DEC_INSN_STREAM_CAP = (DEC_INSN_STREAM_BITS / 8); // in Byte
 	parameter DEC_INSN_LEN_OFFSET = 0; // in Byte. Ref to struct insn_info in sc_types.h

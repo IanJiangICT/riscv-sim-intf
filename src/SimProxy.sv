@@ -120,6 +120,9 @@ class SimProxy;
 		int j;
 		byte c;
 
+		if (DEC_DISCARD_ISTREAM_REMNANT != 0) begin
+			cnt = sc_decode(0, i_stream, insn_max, insn_list);
+		end
 		cnt = sc_decode(stream_cap, i_stream, insn_max, insn_list);
 		offset = 0;
 		for (i = 0; i < cnt; i++) begin // Ref to struct insn_info in sc_types.h
