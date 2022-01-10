@@ -99,6 +99,7 @@ struct mem_block {
 
 struct sim_context {
 	uint64_t pc;
+	uint64_t insn;
 	uint64_t npc;
 	struct proc_state states[STATE_CAP];
 	int state_h, state_t;

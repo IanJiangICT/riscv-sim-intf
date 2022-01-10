@@ -182,10 +182,6 @@ int sc_run_next(unsigned long long *npc, unsigned long long *pc, unsigned long l
 	uint16_t *arg_size = (uint16_t *)(tx_buf + 1);
 	int size_size = sizeof(uint16_t);
 
-	if (npc == NULL) return -1;
-	if (pc == NULL) return -1;
-	if (insn == NULL) return -1;
-
 	fd = sim.sock_fd;
 
 	tx_buf[0] = 'R';
@@ -213,18 +209,22 @@ resend:
 		goto resend;
 
 	rx_offset = size_size;
-	memcpy(npc, rx_buf + rx_offset, sizeof(*npc));
+	memcpy(&sim.npc, rx_buf + rx_offset, sizeof(*npc));
 	rx_offset += sizeof(uint64_t);
-	memcpy(pc, rx_buf + rx_offset, sizeof(*pc));
+	memcpy(&sim.pc, rx_buf + rx_offset, sizeof(*pc));
 	rx_offset += sizeof(uint64_t);
-	memcpy(insn, rx_buf + rx_offset, sizeof(*insn));
-	sim.pc = *pc;
-	sim.npc = *npc;
+	memcpy(&sim.insn, rx_buf + rx_offset, sizeof(*insn));
+	if (pc != NULL)
+		*pc = sim.pc;
+	if (npc != NULL)
+		*npc = sim.npc;
+	if (insn != NULL)
+		*insn = sim.insn;
 
 	return 1;
 }
 
-int sc_force_pc(unsigned long long pc)
+int sc_force_pc(unsigned long long pc, unsigned long long *insn, unsigned long long *npc)
 {
 	int fd;
 	int tx_size;
@@ -270,7 +270,13 @@ int sc_force_pc(unsigned long long pc)
 	}
 	sim.pc = pc;
 	rx_offset = size_size;
-	memcpy(&sim.npc, rx_buf + rx_offset, sizeof(actual_pc));
+	memcpy(&sim.npc, rx_buf + rx_offset, sizeof(uint64_t));
+	rx_offset = size_size + sizeof(uint64_t) * 2;
+	memcpy(&sim.insn, rx_buf + rx_offset, sizeof(uint64_t));
+	if (npc != NULL)
+		*npc = sim.npc;
+	if (insn != NULL)
+		*insn = sim.insn;
 
 	return 1;
 }
