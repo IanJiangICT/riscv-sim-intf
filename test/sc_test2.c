@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 		//npc = pc + 4;
 
 		printf("SC Test: Branch found. Force NPC to 0x%llx...\n", npc);
-		ret = sc_force_pc(npc);
+		ret = sc_force_pc(npc, NULL, NULL);
 		if (ret < 0) { printf("SC Test: Error. sc_force_pc ret = %d\n", ret); return -1; }
 	}
 

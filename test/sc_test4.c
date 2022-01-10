@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 
 	pc = (unsigned long long)(ELF_ENTYR_PC + PC_OFFSET_JUMP_V1_FORCE);
 	printf("SC Test: Force to not jump (NOT modify value 1). PC = 0x%llx\n", pc);
-	ret = sc_force_pc(pc);
+	ret = sc_force_pc(pc, NULL, NULL);
 	if (ret < 0) { printf("SC Test: Error. sc_force_pc ret = %d\n", ret); return -1; }
 	printf("SC Test: Save state at PC 0x%llx\n", pc);
 	ret = sc_save_state();
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
 	pc = (unsigned long long)(ELF_ENTYR_PC + PC_OFFSET_JUMP_VB_FORCE);
 	printf("SC Test: Force to not jump (NOT modify value B). PC = 0x%llx\n", pc);
-	ret = sc_force_pc(pc);
+	ret = sc_force_pc(pc, NULL, NULL);
 	if (ret < 0) { printf("SC Test: Error. sc_force_pc ret = %d\n", ret); return -1; }
 	printf("SC Test: Save state at PC 0x%llx\n", pc);
 	ret = sc_save_state();
