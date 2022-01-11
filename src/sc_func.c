@@ -464,9 +464,10 @@ unsigned char insn_match_type(const char *disasm)
 
 static void inline _print_u64(void *data, int size)
 {
+	int i;
 	if (data == NULL) return;
 	if (size <= 0) return;
-	for (int i = 0; i < size/sizeof(uint64_t); i++) {
+	for (i = 0; i < size/sizeof(uint64_t); i++) {
 		printf(" %016lx", *((uint64_t *)data + i));
 	}
 	printf("\n");
