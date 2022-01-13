@@ -105,13 +105,13 @@ class SimProxy;
 			return -1;
 	endfunction
 
-	function int DecodeIStream(input byte i_stream[DEC_INSN_STREAM_CAP-1:0],
+	function int DecodeIStream(input int stream_cap,
+						input byte i_stream[DEC_INSN_STREAM_CAP-1:0],
                         output byte len[DEC_INSN_LIST_CAP-1:0],
                         output longint insn[DEC_INSN_LIST_CAP-1:0],
                         output byte ext[DEC_INSN_LIST_CAP-1:0],
                         output byte typ[DEC_INSN_LIST_CAP-1:0],
                         output string disasm[DEC_INSN_LIST_CAP-1:0]);
-		int stream_cap = DEC_INSN_STREAM_CAP;
 		byte insn_list[DEC_INSN_LIST_SIZE-1:0];
 		int insn_max = DEC_INSN_LIST_CAP;
 		int offset;
