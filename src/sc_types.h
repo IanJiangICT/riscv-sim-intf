@@ -34,7 +34,9 @@ enum insn_ext {
 };
 
 enum insn_type {
-	ITB = 'B', // Branch
+	ITBC = 'c', // Branch: Conditional
+	ITBR = 'r', // Branch: Register
+	ITBD = 'd', // Branch: Direct
 	ITC = 'C', // Compute
 	ITF = 'F', // Fence
 	ITM = 'M', // Memory load/store

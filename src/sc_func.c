@@ -429,14 +429,18 @@ struct imt_type {
 /* Lists of prefix strings of each type, excpet ITC (compute type).
    Note: All others are sorted to type ITC */
 const char *imt_pl_m[] = {"l", "s", "fl", "fs", "c.l", "c.s", "lr.", "sc.", "vl", "vs"};
-const char *imt_pl_b[] = {"b", "j", "c.b", "c.j"};
+const char *imt_pl_bc[] = {"b", "c.b"};
+const char *imt_pl_br[] = {"jalr", "c.jr", "c.jalr", "ret"};
+const char *imt_pl_bd[] = {"j", "jal", "c.j", "c.jal"};
 const char *imt_pl_t[] = {"wfi", "mret", "sret", "c.eb"};
 const char *imt_pl_s[] = {"csr"};
 const char *imt_pl_f[] = {"fen", "sfe"};
 
 const static struct imt_type lut_type[] = {
 	{ .itype = ITM, .prefix_cnt = sizeof(imt_pl_m)/sizeof(char *), .prefix_list = imt_pl_m},
-	{ .itype = ITB, .prefix_cnt = sizeof(imt_pl_b)/sizeof(char *), .prefix_list = imt_pl_b},
+	{ .itype = ITBC, .prefix_cnt = sizeof(imt_pl_bc)/sizeof(char *), .prefix_list = imt_pl_bc},
+	{ .itype = ITBR, .prefix_cnt = sizeof(imt_pl_br)/sizeof(char *), .prefix_list = imt_pl_br},
+	{ .itype = ITBD, .prefix_cnt = sizeof(imt_pl_bd)/sizeof(char *), .prefix_list = imt_pl_bd},
 	{ .itype = ITT, .prefix_cnt = sizeof(imt_pl_t)/sizeof(char *), .prefix_list = imt_pl_t},
 	{ .itype = ITS, .prefix_cnt = sizeof(imt_pl_s)/sizeof(char *), .prefix_list = imt_pl_s},
 	{ .itype = ITF, .prefix_cnt = sizeof(imt_pl_f)/sizeof(char *), .prefix_list = imt_pl_f},
