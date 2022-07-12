@@ -7,6 +7,9 @@ import "DPI-C" function int sc_decode(input int code_len, input byte code_data[D
 import "DPI-C" function int sc_force_pc(input longint new_pc, output longint insn, output longint next_pc);
 import "DPI-C" function int sc_save_state();
 import "DPI-C" function int sc_recover_state(input longint pc);
+import "DPI-C" function longint sc_get_state_xpr(input int n);
+import "DPI-C" function longint sc_get_state_fpr(input int n);
+import "DPI-C" function longint sc_get_state_npc();
 
 `define SIM_PORT 12300
 
@@ -142,8 +145,7 @@ class SimProxy;
 		return cnt;
 	endfunction
 
-	function int RunUntil(input longint pc);
-		longint npc;
+	function int RunUntil(input longint pc, output longint insn, output longint npc);
 		longint cpc;
 		longint ci;
 		int cnt;
@@ -165,6 +167,7 @@ class SimProxy;
 			return -1;
 		end
 
+		insn = ci;
 		return 1;
 	endfunction
 
