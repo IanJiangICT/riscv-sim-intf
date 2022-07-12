@@ -194,6 +194,13 @@ class SimProxy;
 			return -1;
 		end
 		return 1;
+	endfunction
 
+	function longint GetStateXpr(input int n);
+		return sc_get_state_xpr(n);
+	endfunction
+
+	function longint GetStateFpr(input int n);
+		return sc_get_state_fpr(n);
 	endfunction
 endclass

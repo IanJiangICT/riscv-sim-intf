@@ -861,3 +861,8 @@ unsigned long long sc_get_state_fpr(int n)
 	val += n;
 	return (*val);
 }
+
+unsigned long sc_get_state_npc(void)
+{
+	return (unsigned long long)sim.npc;
+}
