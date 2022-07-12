@@ -69,8 +69,10 @@ struct __attribute__((packed)) rsp_save_state {
 	uint8_t other_data[0];
 };
 
-#define XPR_SIZE (sizeof(uint64_t) * 32)
-#define FPR_SIZE (sizeof(uint64_t) * 64)
+#define XPR_CNT 32
+#define FPR_CNT 32
+#define XPR_SIZE (sizeof(uint64_t) * XPR_CNT)
+#define FPR_SIZE (sizeof(uint64_t) * FPR_CNT)
 #define MEM_UPDATE_CAP 8
 #define MEM_BLOCK_SHIFT 12
 #define MEM_BLOCK_SIZE (1<<MEM_BLOCK_SHIFT)

@@ -835,3 +835,29 @@ int sc_recover_state(unsigned long long pc)
 
 	return 0;
 }
+
+unsigned long long sc_get_state_xpr(int n)
+{
+	int h;
+	struct proc_state *s = NULL;
+	unsigned long long *val;
+	if (n < 0 || n >= XPR_CNT) return 0;
+	h = sim.state_h;
+	s = sim.states + h;
+	val = (unsigned long long *)(s->xpr_data);
+	val += n;
+	return (*val);
+}
+
+unsigned long long sc_get_state_fpr(int n)
+{
+	int h;
+	struct proc_state *s = NULL;
+	unsigned long long *val;
+	if (n < 0 || n >= FPR_CNT) return 0;
+	h = sim.state_h;
+	s = sim.states + h;
+	val = (unsigned long long *)(s->fpr_data);
+	val += n;
+	return (*val);
+}
